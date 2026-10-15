@@ -2425,7 +2425,7 @@
 		line-height: 1.4;
 		max-width: 280px;
 		z-index: 1000;
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+		box-shadow: 0 4px 12px var(--base-shadow-color, rgba(0, 0, 0, 0.15));
 	}
 
 	.canvas-tree-tooltip strong {
@@ -2445,7 +2445,7 @@
 		padding: 4px 0;
 		min-width: 160px;
 		z-index: 1000;
-		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+		box-shadow: 0 8px 24px var(--base-shadow-color, rgba(0, 0, 0, 0.25));
 		position: relative;
 	}
 
@@ -2567,7 +2567,7 @@
 		padding: 4px 0;
 		min-width: 140px;
 		z-index: 1001;
-		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+		box-shadow: 0 8px 24px var(--base-shadow-color, rgba(0, 0, 0, 0.25));
 		display: none;
 	}
 

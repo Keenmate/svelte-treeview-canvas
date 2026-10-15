@@ -53,6 +53,21 @@ export function defaultRenderBackground<T>(rctx: CanvasRenderContext<T>): void {
 	ctx.beginPath();
 	ctx.roundRect(x, y, w, h, r);
 
+	// State fills may be translucent (e.g. --base-hover-bg is an overlay,
+	// --base-primary-bg-subtle a tint), so lay the node background down first —
+	// the same way the overlay composites over a DOM row. A hovered node lifts
+	// with the shared shadow colour.
+	if (state.isHovered && !state.isSearchMatch && !state.isDropTarget && !state.isSelected) {
+		ctx.shadowColor = theme.nodeShadowColor;
+		ctx.shadowBlur = 6;
+		ctx.shadowOffsetY = 2;
+	}
+	ctx.fillStyle = theme.nodeBg;
+	ctx.fill();
+	ctx.shadowColor = 'transparent';
+	ctx.shadowBlur = 0;
+	ctx.shadowOffsetY = 0;
+
 	if (state.isSearchMatch) {
 		ctx.fillStyle = state.isCurrentSearchResult ? theme.nodeCurrentBg : theme.nodeMatchBg;
 		ctx.fill();
@@ -82,16 +97,7 @@ export function defaultRenderBackground<T>(rctx: CanvasRenderContext<T>): void {
 		ctx.strokeStyle = theme.nodeHoverBorder;
 		ctx.lineWidth = theme.nodeBorderWidth;
 		ctx.stroke();
-		ctx.shadowColor = 'rgba(0,0,0,0.08)';
-		ctx.shadowBlur = 6;
-		ctx.shadowOffsetY = 2;
-		ctx.fill();
-		ctx.shadowColor = 'transparent';
-		ctx.shadowBlur = 0;
-		ctx.shadowOffsetY = 0;
 	} else {
-		ctx.fillStyle = theme.nodeBg;
-		ctx.fill();
 		ctx.strokeStyle = theme.nodeBorder;
 		ctx.lineWidth = theme.nodeBorderWidth;
 		ctx.stroke();

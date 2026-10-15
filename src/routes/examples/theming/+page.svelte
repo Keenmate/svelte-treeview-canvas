@@ -130,11 +130,11 @@
 			description: 'Pure Admin dark theme. Red accent, sharp corners, Fira Sans Condensed, --pa-color-* palette.',
 			baseVars: {
 				'--base-font-family': '"Fira Sans Condensed", sans-serif',
-				'--base-accent-color': '#ff0000',
-				'--base-accent-color-light': 'rgba(255, 0, 0, 0.25)',
+				'--base-primary-color': '#ff0000',
+				'--base-primary-bg-subtle': 'rgba(255, 0, 0, 0.25)',
 				'--base-text-color-1': '#ffffff',
 				'--base-text-color-3': '#999999',
-				'--base-text-color-on-accent': '#ffffff',
+				'--base-on-primary-text-color': '#ffffff',
 				'--base-main-bg': '#1a1a1a',
 				'--base-elevated-bg': '#0d0d0d',
 				'--base-border-color': '#333333',
@@ -161,11 +161,11 @@
 			name: 'Express',
 			description: 'Pure Admin light theme. Red + yellow, --pa-color-* palette.',
 			baseVars: {
-				'--base-accent-color': '#D40511',
-				'--base-accent-color-light': 'rgba(212, 5, 17, 0.06)',
+				'--base-primary-color': '#D40511',
+				'--base-primary-bg-subtle': 'rgba(212, 5, 17, 0.06)',
 				'--base-text-color-1': '#333333',
 				'--base-text-color-3': '#CCCCCC',
-				'--base-text-color-on-accent': '#ffffff',
+				'--base-on-primary-text-color': '#ffffff',
 				'--base-main-bg': '#ffffff',
 				'--base-elevated-bg': '#f5f5f5',
 				'--base-border-color': '#E5E5E5',
@@ -193,15 +193,15 @@
 				'--ct-font-size': '10',
 				'--ct-node-radius': '3',
 				'--ct-color-bar-width': '2',
-				'--base-accent-color': '#6366f1',
-				'--base-accent-color-light': '#eef2ff',
+				'--base-primary-color': '#6366f1',
+				'--base-primary-bg-subtle': '#eef2ff',
 				'--base-text-color-1': '#312e81',
 				'--base-text-color-3': '#a5b4fc',
 				'--base-main-bg': '#f5f3ff',
 				'--base-elevated-bg': '#ffffff',
 				'--base-border-color': '#c7d2fe',
 				'--base-hover-bg': '#eef2ff',
-				'--base-text-color-on-accent': '#ffffff',
+				'--base-on-primary-text-color': '#ffffff',
 			},
 		},
 		{
@@ -216,15 +216,15 @@
 				'--ct-node-radius': '12',
 				'--ct-node-padding-x': '20',
 				'--ct-color-bar-width': '5',
-				'--base-accent-color': '#059669',
-				'--base-accent-color-light': '#d1fae5',
+				'--base-primary-color': '#059669',
+				'--base-primary-bg-subtle': '#d1fae5',
 				'--base-text-color-1': '#064e3b',
 				'--base-text-color-3': '#6ee7b7',
 				'--base-main-bg': '#ecfdf5',
 				'--base-elevated-bg': '#ffffff',
 				'--base-border-color': '#a7f3d0',
 				'--base-hover-bg': '#d1fae5',
-				'--base-text-color-on-accent': '#ffffff',
+				'--base-on-primary-text-color': '#ffffff',
 			},
 		},
 		{
@@ -236,23 +236,23 @@
 				'--ct-node-padding-x': '20',
 				'--ct-color-bar-width': '0',
 				'--ct-node-gap': '8',
-				'--base-accent-color': '#e11d48',
-				'--base-accent-color-light': '#ffe4e6',
+				'--base-primary-color': '#e11d48',
+				'--base-primary-bg-subtle': '#ffe4e6',
 				'--base-text-color-1': '#881337',
 				'--base-text-color-3': '#fda4af',
 				'--base-main-bg': '#fff1f2',
 				'--base-elevated-bg': '#ffffff',
 				'--base-border-color': '#fecdd3',
 				'--base-hover-bg': '#ffe4e6',
-				'--base-text-color-on-accent': '#ffffff',
+				'--base-on-primary-text-color': '#ffffff',
 			},
 		},
 		{
 			name: 'Mixed: --ct-* over --base-*',
-			description: 'Shows priority: --ct-conn-color (orange) wins over --base-accent-color (blue).',
+			description: 'Shows priority: --ct-conn-color (orange) wins over --base-primary-color (blue).',
 			baseVars: {
-				'--base-accent-color': '#0284c7',
-				'--base-accent-color-light': '#e0f2fe',
+				'--base-primary-color': '#0284c7',
+				'--base-primary-bg-subtle': '#e0f2fe',
 				'--base-text-color-1': '#0c4a6e',
 				'--base-text-color-3': '#7dd3fc',
 				'--base-main-bg': '#f0f9ff',
@@ -322,7 +322,7 @@
 			The canvas theme resolves values in this order:
 			<code>theme prop</code> &rarr; <code>--ct-*</code> (component) &rarr; <code>--base-*</code> (shared) &rarr; hardcoded default.
 			<br>
-			Set <code>--base-accent-color</code> once on <code>:root</code> and it flows into node selection, minimap viewport, ghost border, and more.
+			Set <code>--base-primary-color</code> once on <code>:root</code> and it flows into node selection, minimap viewport, ghost border, and more.
 		</p>
 	</div>
 
@@ -476,21 +476,21 @@
 		<h2>How It Works</h2>
 		<div class="code-block">
 			<pre>{`<!-- Set shared design tokens on any ancestor element -->
-<div style="--base-accent-color: #e11d48; --base-main-bg: #fff1f2;">
+<div style="--base-primary-color: #e11d48; --base-main-bg: #fff1f2;">
   <CanvasTree {data} ... />
 </div>
 
 <!-- Or set them globally -->
 <style>
   :root {
-    --base-accent-color: #0284c7;
+    --base-primary-color: #0284c7;
     --base-text-color-1: #0c4a6e;
     --base-border-color: #bae6fd;
   }
 </style>
 
 <!-- Component-specific --ct-* always wins over --base-* -->
-<div style="--base-accent-color: #0284c7; --ct-conn-color: #f97316;">
+<div style="--base-primary-color: #0284c7; --ct-conn-color: #f97316;">
   <CanvasTree {data} ... />
   <!-- connections are orange, selection is blue -->
 </div>

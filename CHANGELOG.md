@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Follows `@keenmate/base-css-variables` 2.0.0.** Reads `--base-primary-color` (was
+  `--base-accent-color`), `--base-primary-bg-subtle` (was `--base-accent-color-light`) and
+  `--base-on-primary-text-color` (was `--base-text-color-on-accent`); depth colours fall back to
+  `--base-palette-1…9` (was the non-existent `--pa-color-N`). README + theming example updated.
+- **Shadows share one tone: `--base-shadow-color`.** Tooltip and context-menu shadows, and the
+  canvas hover lift (new `nodeShadowColor` / `--ct-node-shadow-color`), take their colour from it.
+
+### Fixed
+
+- **Derived `--base-*` tokens painted nothing.** `getPropertyValue` returns a custom property's raw
+  text, so 2.0's formula tokens (e.g. `--base-elevated-bg` = `light-dark(oklch(from var(…)))`) reached
+  `ctx.fillStyle`, which silently rejects them. Theme values with `var()` / `light-dark()` /
+  `color-mix()` / relative colours are now resolved through a probe element first.
+- **Translucent state fills** (hover overlay, selected tint) are painted over the node background
+  instead of over the canvas, matching how they composite on a DOM row.
+
 ## [1.0.0-rc04] - 2026-05-28
 
 ### Added

@@ -53,6 +53,8 @@ export interface CanvasTheme {
 	// Node (hovered)
 	nodeHoverBg: string;
 	nodeHoverBorder: string;
+	/** Shadow under a hovered node — follows --base-shadow-color (one tone with pure-admin) */
+	nodeShadowColor: string;
 
 	// Node (drop target)
 	nodeDropBg: string;
@@ -155,6 +157,7 @@ export const defaultCanvasTheme: CanvasTheme = {
 
 	nodeHoverBg: '#fafbff',
 	nodeHoverBorder: '#94a3b8',
+	nodeShadowColor: 'rgba(0, 0, 0, 0.08)',
 
 	nodeDropBg: '#eff6ff',
 	nodeDropBorder: '#3b82f6',
@@ -230,15 +233,15 @@ const CSS_VAR_MAP: [string, keyof CanvasTheme, 'string' | 'number', string?][] =
 	['--ct-font-size',           'fontSize',            'number'],
 
 	// Depth colors (--ct-depth-color-N → --pa-color-N → default)
-	['--ct-depth-color-0',       'depthColor0',         'string', '--pa-color-1'],
-	['--ct-depth-color-1',       'depthColor1',         'string', '--pa-color-2'],
-	['--ct-depth-color-2',       'depthColor2',         'string', '--pa-color-3'],
-	['--ct-depth-color-3',       'depthColor3',         'string', '--pa-color-4'],
-	['--ct-depth-color-4',       'depthColor4',         'string', '--pa-color-5'],
-	['--ct-depth-color-5',       'depthColor5',         'string', '--pa-color-6'],
-	['--ct-depth-color-6',       'depthColor6',         'string', '--pa-color-7'],
-	['--ct-depth-color-7',       'depthColor7',         'string', '--pa-color-8'],
-	['--ct-depth-color-8',       'depthColor8',         'string', '--pa-color-9'],
+	['--ct-depth-color-0',       'depthColor0',         'string', '--base-palette-1'],
+	['--ct-depth-color-1',       'depthColor1',         'string', '--base-palette-2'],
+	['--ct-depth-color-2',       'depthColor2',         'string', '--base-palette-3'],
+	['--ct-depth-color-3',       'depthColor3',         'string', '--base-palette-4'],
+	['--ct-depth-color-4',       'depthColor4',         'string', '--base-palette-5'],
+	['--ct-depth-color-5',       'depthColor5',         'string', '--base-palette-6'],
+	['--ct-depth-color-6',       'depthColor6',         'string', '--base-palette-7'],
+	['--ct-depth-color-7',       'depthColor7',         'string', '--base-palette-8'],
+	['--ct-depth-color-8',       'depthColor8',         'string', '--base-palette-9'],
 	['--ct-depth-color-9',       'depthColor9',         'string'],
 
 	['--ct-node-bg',             'nodeBg',              'string', '--base-elevated-bg'],
@@ -247,14 +250,15 @@ const CSS_VAR_MAP: [string, keyof CanvasTheme, 'string' | 'number', string?][] =
 	['--ct-node-radius',         'nodeRadius',          'number'],
 	['--ct-node-text',           'nodeText',            'string', '--base-text-color-1'],
 
-	['--ct-node-selected-bg',    'nodeSelectedBg',      'string', '--base-accent-color-light'],
-	['--ct-node-selected-border','nodeSelectedBorder',   'string', '--base-accent-color'],
+	['--ct-node-selected-bg',    'nodeSelectedBg',      'string', '--base-primary-bg-subtle'],
+	['--ct-node-selected-border','nodeSelectedBorder',   'string', '--base-primary-color'],
 
 	['--ct-selection-rect-fill',  'selectionRectFill',  'string'],
 	['--ct-selection-rect-stroke','selectionRectStroke', 'string'],
 
 	['--ct-node-hover-bg',       'nodeHoverBg',         'string', '--base-hover-bg'],
 	['--ct-node-hover-border',   'nodeHoverBorder',     'string'],
+	['--ct-node-shadow-color',   'nodeShadowColor',     'string', '--base-shadow-color'],
 
 	['--ct-node-drop-bg',        'nodeDropBg',          'string'],
 	['--ct-node-drop-border',    'nodeDropBorder',      'string'],
@@ -272,7 +276,7 @@ const CSS_VAR_MAP: [string, keyof CanvasTheme, 'string' | 'number', string?][] =
 	['--ct-chevron-font-weight', 'chevronFontWeight',   'string'],
 	['--ct-chevron-padding-end',  'chevronPaddingEnd','number'],
 
-	['--ct-badge-text',          'badgeText',           'string', '--base-text-color-on-accent'],
+	['--ct-badge-text',          'badgeText',           'string', '--base-on-primary-text-color'],
 	['--ct-badge-height',        'badgeHeight',         'number'],
 	['--ct-badge-font-size',     'badgeFontSize',       'number'],
 
@@ -281,7 +285,7 @@ const CSS_VAR_MAP: [string, keyof CanvasTheme, 'string' | 'number', string?][] =
 
 	['--ct-minimap-bg',          'minimapBg',           'string'],
 	['--ct-minimap-border',      'minimapBorder',       'string', '--base-border-color'],
-	['--ct-minimap-viewport',    'minimapViewport',     'string', '--base-accent-color'],
+	['--ct-minimap-viewport',    'minimapViewport',     'string', '--base-primary-color'],
 	['--ct-minimap-width',       'minimapWidth',        'number'],
 	['--ct-minimap-height',      'minimapHeight',       'number'],
 
@@ -294,7 +298,7 @@ const CSS_VAR_MAP: [string, keyof CanvasTheme, 'string' | 'number', string?][] =
 	['--ct-dz-radius',           'dzRadius',            'number'],
 
 	['--ct-ghost-bg',            'ghostBg',             'string', '--base-elevated-bg'],
-	['--ct-ghost-border',        'ghostBorder',         'string', '--base-accent-color'],
+	['--ct-ghost-border',        'ghostBorder',         'string', '--base-primary-color'],
 	['--ct-ghost-opacity',       'ghostOpacity',        'number'],
 
 	['--ct-tooltip-bg',          'tooltipBg',           'string'],
@@ -312,9 +316,28 @@ const CSS_VAR_MAP: [string, keyof CanvasTheme, 'string' | 'number', string?][] =
  * Only returns keys that are actually set on the element.
  *
  * For each theme key, tries --ct-* first, then --base-* fallback (if mapped).
- * This lets apps set --base-accent-color once and have it flow into canvas nodes,
+ * This lets apps set --base-primary-color once and have it flow into canvas nodes,
  * connections, minimap, etc. — while still allowing per-component --ct-* overrides.
  */
+/**
+ * getPropertyValue returns a custom property's raw text, so a derived token such as
+ * `--base-elevated-bg: light-dark(oklch(from var(--base-main-bg) …))` arrives as a
+ * formula the canvas can't paint. Resolve anything containing var()/light-dark()/
+ * relative colour syntax through a probe element inside `el` (so it inherits the same
+ * tokens and color-scheme). Non-colour values (fonts, radii) pass through unchanged.
+ */
+function resolveColor(el: HTMLElement, raw: string): string {
+	if (!/var\(|light-dark\(|\bfrom\b|color-mix\(/.test(raw)) return raw;
+	const probe = document.createElement('span');
+	probe.style.display = 'none';
+	probe.style.color = raw;
+	if (!probe.style.color) return raw; // not a colour
+	el.appendChild(probe);
+	const resolved = getComputedStyle(probe).color;
+	probe.remove();
+	return resolved || raw;
+}
+
 export function readCssTheme(el: HTMLElement): Partial<CanvasTheme> {
 	const style = getComputedStyle(el);
 	const partial: Partial<CanvasTheme> = {};
@@ -333,7 +356,7 @@ export function readCssTheme(el: HTMLElement): Partial<CanvasTheme> {
 				(partial as Record<string, unknown>)[key] = num;
 			}
 		} else {
-			(partial as Record<string, unknown>)[key] = raw;
+			(partial as Record<string, unknown>)[key] = resolveColor(el, raw);
 		}
 	}
 

@@ -95,7 +95,7 @@ Both packages are required. `@keenmate/svelte-treeview` provides the core tree l
 Set shared design tokens on any ancestor element:
 
 ```html
-<div style="--base-accent-color: #e11d48; --base-main-bg: #fff1f2;">
+<div style="--base-primary-color: #e11d48; --base-main-bg: #fff1f2;">
   <CanvasTree {data} ... />
 </div>
 ```
@@ -106,7 +106,7 @@ Or use the `theme` prop for direct overrides:
 <CanvasTree {data} theme={{ bg: '#1a1a2e', nodeText: '#e2e8f0' }} ... />
 ```
 
-Key CSS variables: `--base-accent-color`, `--base-main-bg`, `--base-elevated-bg`, `--base-text-color-1`, `--base-border-color`, `--base-font-family`. Component-specific: `--ct-node-radius`, `--ct-conn-color`, `--ct-menu-bg`, etc.
+Key CSS variables: `--base-primary-color`, `--base-main-bg`, `--base-elevated-bg`, `--base-text-color-1`, `--base-border-color`, `--base-font-family`. Component-specific: `--ct-node-radius`, `--ct-conn-color`, `--ct-menu-bg`, etc.
 
 ## Context Menu
 
