@@ -39,7 +39,7 @@
 	},
 	"peerDependencies": {
 		"svelte": "^5.0.0",
-		"@keenmate/svelte-treeview": "^5.0.0"
+		"@keenmate/svelte-treeview": "^5.0.0-rc16"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^1.2.5",
