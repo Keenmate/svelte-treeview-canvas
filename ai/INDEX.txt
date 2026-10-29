@@ -98,7 +98,10 @@ O
 -
 onNodeClick → interaction.txt, props-reference.txt
 onNodeDrop → interaction.txt
-onPaste → interaction.txt
+onNodePaste → interaction.txt
+onAction / beforeActionCallback → interaction.txt
+expandNodes / collapseNodes / toggleNodeExpanded / expandedPaths → interaction.txt
+sortNodes / sortAll / isSortingEnabled → interaction.txt
 onSelectionChange → interaction.txt
 
 R
@@ -113,7 +116,7 @@ renderNodeCallback → rendering.txt
 
 S
 -
-selectedPath → interaction.txt, props-reference.txt
+focusedPath → interaction.txt, props-reference.txt
 selectedPaths → interaction.txt, props-reference.txt
 selectionRectangle → interaction.txt
 showDotGrid → props-reference.txt

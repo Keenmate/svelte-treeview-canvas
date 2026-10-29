@@ -4,6 +4,25 @@ Canvas 2D rendering plugin for [`@keenmate/svelte-treeview`](https://github.com/
 
 This package was originally part of `@keenmate/svelte-treeview` but has been extracted into its own package to separate concerns — the core package handles tree data, expand/collapse, search, drag & drop logic, while this package provides a high-performance canvas renderer on top of the same core. **You still need `@keenmate/svelte-treeview` installed** — it is a required peer dependency.
 
+## What's New (Unreleased) — follows `@keenmate/svelte-treeview` 5.0.0-rc16
+
+Breaking — the same vocabulary as svelte-treeview / web-treeview (see CHANGELOG for every rename):
+
+- **`data` → `nodes`** (bindable: after a mutation `bind:nodes` receives the tree's data).
+- **`selectedPath` → `focusedPath`** (the cursor node); `selectedPaths` stays the selection.
+  `isSelectedMember` → `isCheckedMember` (the checkbox set, `controller.checkedPaths`).
+- **One ctx object per callback**: `onNodeClick(ctx)`, `onSelectionChange({ paths, nodes, controller })`,
+  `onNodeDrop({ source, target, position, controller })`, `sortCallback({ nodes })`, `get*Callback({ node })`,
+  `transformDataForPaste({ data, … })`; `onPaste` → `onNodePaste`.
+- **Context menus use the core action-item model**: `{ text, icon, onClick(detail), isDanger, isToggled, children }`,
+  `menuDivider(text?)` and built-in action names (`'copy'`, `'paste'`, `'delete'`, `'expand-subtree'`, `'sort'`…);
+  `beforeActionCallback` / `onAction`. Menu callbacks take one ctx (`TreeMenuContext`).
+- **Expand family**: `ExpandOptions { isExclusive, isSilent }`, `toggleNodeExpanded`, `bind:expandedPaths`,
+  `onNodeExpand` / `onNodeCollapse` / `onExpandedChange` / `beforeExpandCallback`.
+- **Sorting**: `isSortingEnabled`, `sortNodes` / `sortAll`, `onNodesReorder`. Also `labels`, `onTreeChange`.
+- **`expandLevel` defaults to `0`** (only the roots), like svelte-treeview.
+- Fix: PageUp / PageDown and Shift+navigation no longer recurse forever.
+
 ## What's New in v1.0.0-rc04
 
 - **Array variants on `expandAll` / `collapseAll`**: Pass `string[]` to expand or collapse multiple subtrees in one call (single emit).
@@ -13,12 +32,6 @@ This package was originally part of `@keenmate/svelte-treeview` but has been ext
 - **`isSelectedMember` / `isSelectableMember` props passthrough**: Forward to the core `TreeProvider` so canvas users can seed `selectedPaths` from data and gate selectability per node. Requires `@keenmate/svelte-treeview` >= 5.0.0-rc07.
 - **Internal: migrated to `highlightNode` / `highlightNodes`**: Canvas interaction code and the dendrogram example now use the rc06 names instead of the deprecated `selectNode` / `selectNodes` aliases. No user-visible API change.
 - **`/examples/expand-collapse` demo page**: Three cards — Array variants, Exclusive focus mode, and `isSelectedMember` seeding — each on a live canvas tree with current-expanded-paths readout.
-
-## What's New in v1.0.0-rc03
-
-- **Shift+keyboard highlight**: Shift+Arrow/Home/End/PageUp/PageDown extends highlight selection on canvas, matching file-manager behavior.
-- **Three-level selection alignment**: Canvas now reads `highlightedPaths` from the core controller for visual highlights, aligned with the core's `focusedNode` / `highlightedPaths` / `selectedPaths` model.
-- **Interaction example page**: Interactive demo at `/examples/interaction` for click behavior, multi-select, and keyboard navigation with live state display.
 
 ## Installation
 
@@ -41,14 +54,14 @@ Both packages are required. `@keenmate/svelte-treeview` provides the core tree l
     { id: 3, path: '1.2', parentPath: '1', name: 'Child B', hasChildren: false },
   ];
 
-  function sortByName(items: LTreeNode<any>[]) {
-    return [...items].sort((a, b) => (a.data?.name || '').localeCompare(b.data?.name || ''));
+  function sortByName({ nodes }: { nodes: LTreeNode<any>[] }) {
+    return [...nodes].sort((a, b) => (a.data?.name || '').localeCompare(b.data?.name || ''));
   }
 </script>
 
 <div style="height: 500px;">
   <CanvasTree
-    {data}
+    nodes={data}
     idMember="id"
     pathMember="path"
     sortCallback={sortByName}
@@ -87,7 +100,7 @@ Both packages are required. `@keenmate/svelte-treeview` provides the core tree l
 | `sunburst` | Accordion sunburst with arc rendering |
 
 ```svelte
-<CanvasTree {data} layoutMode="fishbone" growthDirection="right" ... />
+<CanvasTree {nodes} layoutMode="fishbone" growthDirection="right" ... />
 ```
 
 ## Theming
@@ -96,40 +109,52 @@ Set shared design tokens on any ancestor element:
 
 ```html
 <div style="--base-primary-color: #e11d48; --base-main-bg: #fff1f2;">
-  <CanvasTree {data} ... />
+  <CanvasTree {nodes} ... />
 </div>
 ```
 
 Or use the `theme` prop for direct overrides:
 
 ```svelte
-<CanvasTree {data} theme={{ bg: '#1a1a2e', nodeText: '#e2e8f0' }} ... />
+<CanvasTree {nodes} theme={{ bg: '#1a1a2e', nodeText: '#e2e8f0' }} ... />
 ```
 
 Key CSS variables: `--base-primary-color`, `--base-main-bg`, `--base-elevated-bg`, `--base-text-color-1`, `--base-border-color`, `--base-font-family`. Component-specific: `--ct-node-radius`, `--ct-conn-color`, `--ct-menu-bg`, etc.
 
 ## Context Menu
 
-```typescript
-import type { LTreeNode, ContextMenuEntry } from '@keenmate/svelte-treeview';
+The same entry model as svelte-treeview's `<Tree>` (core action items): items, `menuDivider(text?)`
+and built-in action names (texts from `labels`; they act on the selection when the node is in it).
 
-function getContextMenu(node: LTreeNode<Item>): ContextMenuEntry[] {
+```typescript
+import { menuDivider } from '@keenmate/svelte-treeview';
+import type { TreeMenuContext, TreeMenuEntry } from '@keenmate/svelte-treeview';
+
+function getContextMenu({ node, controller }: TreeMenuContext<Item>): TreeMenuEntry<Item>[] {
   return [
-    { icon: '👤', label: 'View', shortcut: 'V', onclick: () => view(node) },
-    { divider: true, label: 'Actions' },
-    { icon: '✏️', label: 'Edit', isDisabled: node.data.readonly, onclick: () => edit(node) },
-    { icon: '📋', label: 'Copy...', children: [
-      { label: 'Name', onclick: () => copyName(node) },
-      { label: 'Email', onclick: () => copyEmail(node) },
+    { icon: '👤', text: 'View', shortcut: 'V', onClick: () => view(node) },
+    menuDivider('Actions'),
+    { icon: '✏️', text: 'Edit', isDisabled: node.data.readonly, onClick: () => edit(node) },
+    { icon: '📋', text: 'Copy...', children: [
+      { text: 'Name', onClick: () => copyName(node) },
+      { text: 'Email', onClick: () => copyEmail(node) },
     ]},
-    { divider: true, label: 'Danger zone' },
-    { icon: '🗑️', label: 'Delete', className: 'danger', onclick: () => del(node) },
+    'cut', 'paste', 'expand-subtree',          // built-in actions
+    menuDivider('Danger zone'),
+    { icon: '🗑️', text: 'Delete', isDanger: true, onClick: () => del(node) },
   ];
 }
 ```
 
 ```svelte
-<CanvasTree {data} onNodeContextMenu={getContextMenu} ... />
+<CanvasTree
+  {nodes}
+  getNodeContextMenuItemsCallback={getContextMenu}
+  getGroupContextMenuItemsCallback={({ node, childNodes }) => [...]}
+  getCanvasContextMenuItemsCallback={({ controller }) => [...]}
+  onAction={(detail) => console.log(detail.action, detail.path)}
+  ...
+/>
 ```
 
 ## Custom Node Rendering
@@ -148,7 +173,7 @@ function renderBody(rctx: CanvasRenderContext<Item>) {
 ```
 
 ```svelte
-<CanvasTree {data} renderBodyCallback={renderBody} ... />
+<CanvasTree {nodes} renderBodyCallback={renderBody} ... />
 ```
 
 ## Examples

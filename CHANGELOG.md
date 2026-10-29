@@ -7,6 +7,75 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — BREAKING (follows `@keenmate/svelte-treeview` 5.0.0-rc16)
+
+Requires `@keenmate/svelte-treeview` 5.0.0-rc16. The canvas takes over the tree's renamed vocabulary
+(no aliases):
+
+- **`data` → `nodes`.** `nodes` is the input AND the current state: after a mutation (move / add /
+  remove / paste / branch ops) `bind:nodes` receives the tree's data (microtask); assigning a new
+  array reloads the tree (it used to be read once).
+- **`selectedPath` → `focusedPath`** (the cursor node: keyboard navigation, last click). `selectedPaths`
+  stays the selection; assigning it now replaces the controller's selection (silent).
+- **`isSelectedMember` → `isCheckedMember`** (seeds the checkbox set, `controller.checkedPaths`).
+- **`expandLevel` default `2` → `0`** (only the roots), like svelte-treeview. Pass `expandLevel={2}`
+  for the old look.
+- **One ctx object per callback.** `onNodeClick(node)` → `onNodeClick(ctx)` (`NodeEventContext`:
+  `{ node, path, parent, siblings, controller }`); `onSelectionChange(paths, nodes)` →
+  `onSelectionChange({ paths, nodes, controller })`; `onNodeDrop(source, target, position)` →
+  `onNodeDrop({ source, target, position, controller })` (`source` / `target` are `NodeRef`s, new type
+  `CanvasNodeDropContext`). The passthrough callbacks take svelte-treeview's ctx shapes:
+  `sortCallback(items)` → `sortCallback({ nodes })`, `getDisplayValueCallback` /
+  `getSearchValueCallback` / `getIsDraggableCallback` / `getAllowedDropPositionsCallback` /
+  `getIsCollapsibleCallback` `(node)` → `({ node })`, `transformDataForPaste(data, ctx)` →
+  `transformDataForPaste(ctx)` (`ctx.data`).
+- **`onPaste` → `onNodePaste`**, now passed to the tree: it fires for every paste (Ctrl+V, a menu
+  item's `pasteNodes`, the built-in `paste` action) — the canvas no longer calls it itself.
+- **Context menus use the core action-item model** (svelte-treeview's `TreeMenuEntry`): item fields
+  `label` → `text`, `onclick` → `onClick(detail)`, `className` → `cssClass` (`'danger'` →
+  `isDanger: true`); dividers `{ divider: true, text }` / `menuDivider(text?)`; new `isToggled`,
+  `tooltip`, `get*Callback(ctx)`, `getChildrenCallback`, `shouldCloseOnClick`, and the built-in
+  action names (`'copy'`, `'cut'`, `'paste'`, `'delete'`, `'expand'`, `'collapse'`,
+  `'expand-subtree'`, `'collapse-subtree'`, `'expand-all'`, `'collapse-all'`, `'sort'`,
+  `'sort-subtree'`, `'sort-all'` — texts from `labels`, acting on the selection when the node is in
+  it). Callbacks take one ctx: `getNodeContextMenuItemsCallback(node, selectedNodes)` →
+  `(ctx: TreeMenuContext)` (read the selection via `ctx.controller.getSelectedNodes()`),
+  `getGroupContextMenuItemsCallback(parentNode, childNodes)` → `(ctx: CanvasGroupMenuContext)`
+  (`ctx.node` = the group's parent, `ctx.childNodes`), `getCanvasContextMenuItemsCallback()` →
+  `(ctx: CanvasMenuContext)` (`{ controller }`; no node, so no built-ins there). Re-exported types
+  `ContextMenuItem` / `ContextMenuDivider` / `ContextMenuEntry` → `TreeMenuItem` / `MenuDivider` /
+  `TreeMenuEntry` (+ `TreeMenuContext`, `TreeAction`, `TreeActionEventDetail`, `MenuEntry`,
+  `menuDivider`).
+- **Expand API = svelte-treeview's**: options `{ exclusive, noEmit }` → `ExpandOptions { isExclusive,
+  isSilent }` on `expandNodes` / `collapseNodes` / `expandAll` / `collapseAll`; the first parameter
+  is `paths`. `expandNodes` / `collapseNodes` return a Promise (settles after an async
+  `beforeExpandCallback`). Clicking / double-clicking / Enter toggles through
+  `toggleNodeExpanded` (the expand gate + events).
+- **`scrollToPath(path, options?)`** — `{ shouldExpandAncestors = true }` (`CanvasScrollToPathOptions`,
+  the canvas subset of svelte-treeview's `ScrollToPathOptions`).
+- `searchNodes(term)` / `filterNodes(term)` (parameter renamed from `query`).
+
+### Added
+
+- Passthrough props (same as svelte-treeview's `<Tree>`): bindable **`expandedPaths`**,
+  `onNodeExpand` / `onNodeCollapse` / `onExpandedChange` / `beforeExpandCallback`,
+  **`isSortingEnabled`**, `onNodesReorder`, **`labels`**, `onTreeChange`, `onNodeCopy` / `onNodeCut` /
+  `onNodeDelete` / `beforeDeleteCallback`, **`beforeActionCallback` / `onAction`** (menu activation:
+  `beforeActionCallback` → item `onClick` → built-in → `onAction`).
+- Methods `toggleNodeExpanded(path, options?)`, `sortNodes(paths, options?)`, `sortAll(paths?, options?)`.
+- Re-exported types `NodeRef`, `NodeEventContext`, `SelectionChangeContext`, `TreeCallbackContext`,
+  `ExpandOptions`, `SortOptions`, `TreeLabels`, `TreeNavigation`, `TreeNavigationOverrides`.
+- Context-menu items render `isToggled` (`role="menuitemcheckbox"` + `aria-checked`), `tooltip`,
+  `data-action` / `data-id`, and async submenus (`getChildrenCallback`).
+
+### Fixed
+
+- **PageUp / PageDown and Shift+navigation recursed until the stack overflowed** — the canvas
+  navigation delegated them to `controller.nav*()`, which dispatch back into the canvas navigation;
+  they now run the controller's default navigation.
+- A menu item `shortcut` naming a non-character key (`Delete`, `F2`) never matched (the key was
+  lower-cased).
+
 ### Changed
 
 - **Follows `@keenmate/base-css-variables` 2.0.0.** Reads `--base-primary-color` (was

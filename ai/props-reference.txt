@@ -2,35 +2,43 @@ PROPS REFERENCE
 ===============
 
 Complete list of CanvasTree props with types and defaults.
+Every callback takes ONE ctx object (fields can be added later); `controller` is on every
+ctx (non-enumerable). Same vocabulary as @keenmate/svelte-treeview 5.0.0-rc16.
 
 DATA PROPS (passed to TreeController)
 --------------------------------------
-data: T[]                          — REQUIRED. Flat array of tree items.
+nodes?: T[]                        — Flat array of tree items. Input AND current state: after a
+                                     mutation `bind:nodes` receives the tree's data (microtask);
+                                     assigning a new array reloads the tree.
 idMember: string                   — REQUIRED. Property name for unique ID.
 pathMember: string                 — REQUIRED. Property name for hierarchical path.
-sortCallback: (items) => items     — REQUIRED. Sort function for siblings.
+sortCallback?: ({ nodes }) => nodes — Sort function for siblings.
 isSorted?: boolean                 — Data is pre-sorted (skip sort step).
-expandLevel?: number               — Initial expand depth (default: 2).
+isSortingEnabled?: boolean         — false = never auto-sort (input order kept) (default: true).
+expandLevel?: number               — Initial expand depth (default: 0 = only the roots).
 parentPathMember?: string          — Property for parent path.
 levelMember?: string               — Property for depth level.
 hasChildrenMember?: string         — Property for has-children flag.
 displayValueMember?: string        — Property for display text.
-getDisplayValueCallback?: (node) => string
+getDisplayValueCallback?: ({ node }) => string
 searchValueMember?: string         — Property for search text.
-getSearchValueCallback?: (node) => string
+getSearchValueCallback?: ({ node }) => string
 treePathSeparator?: string         — Path separator (default: ".").
 dragDropMode?: 'none'|'self'|'cross'|'both'
 shouldUseInternalSearchIndex?: boolean
 rangeSelectionMode?: 'visual'|'logical' — Multi-select range mode.
 isExpandedMember?: string
 isDraggableMember?: string
-getIsDraggableCallback?: (node) => boolean
+getIsDraggableCallback?: ({ node }) => boolean
 isDropAllowedMember?: string
 allowedDropPositionsMember?: string
-getAllowedDropPositionsCallback?: (node) => DropPosition[]|null
+getAllowedDropPositionsCallback?: ({ node }) => DropPosition[]|null
 isCollapsibleMember?: string
-getIsCollapsibleCallback?: (node) => boolean
+getIsCollapsibleCallback?: ({ node }) => boolean
+isSelectableMember?: string
+isCheckedMember?: string           — Seeds the checked set (controller.checkedPaths) from data.
 orderMember?: string
+labels?: Partial<TreeLabels>       — UI strings (built-in menu action texts…), merged over English defaults.
 
 CANVAS VISUAL PROPS
 --------------------
@@ -89,21 +97,34 @@ getBadgeContentCallback             — Resolve badge content (e.g. child count)
 
 BINDABLE STATE
 --------------
-selectedPath?: string|null          — Currently selected node path.
-selectedPaths?: Set<string>         — All selected node paths (multi-select).
+focusedPath?: string|null           — The cursor node (keyboard navigation, last click).
+selectedPaths?: Set<string>         — The selection (click / Ctrl / Shift / rectangle). Assigning replaces it (silent).
+expandedPaths?: Set<string>         — The expanded nodes. Assigning replaces the expanded state (silent).
 controller?: TreeController<T>|null — TreeController reference.
 
 EVENTS
 ------
-onNodeClick?: (node) => void
-onSelectionChange?: (paths, nodes) => void
-onNodeDrop?: (source, target, position) => void
+onNodeClick?: (ctx: NodeEventContext) => void          — { node, path, parent, siblings, controller }
+onSelectionChange?: ({ paths, nodes, controller }) => void
+onNodeDrop?: ({ source, target, position, controller }) => void   — source/target are NodeRefs
+onNodeExpand? / onNodeCollapse?: (ctx: NodeEventContext) => void
+onExpandedChange?: ({ paths, controller }) => void
+onTreeChange?: ({ controller }) => void                  — after a mutation (not on loading nodes)
+onNodesReorder?: ({ parentPath, nodes, changes, controller }) => void
+onNodeCopy? / onNodeCut? / onNodeDelete?: ({ paths, nodes, controller }) => void
+onAction?: (detail) => void                              — a context-menu item ran
+
+INTERCEPTORS (before*Callback — false cancels)
+-----------------------------------------------
+beforeExpandCallback?: (ctx) => boolean|void|Promise     — Promise = lazy load (node shows loading)
+beforeActionCallback?: (detail) => boolean|void|Promise
+beforeDeleteCallback?: (ctx) => …                        — the Delete command / built-in 'delete'
 
 CONTEXT MENU CALLBACKS (return data)
 -------------------------------------
-getNodeContextMenuItemsCallback?: (node, selectedNodes?) => ContextMenuEntry[]
-getGroupContextMenuItemsCallback?: (parentNode, childNodes) => ContextMenuEntry[]
-getCanvasContextMenuItemsCallback?: () => ContextMenuEntry[]
+getNodeContextMenuItemsCallback?: (ctx: TreeMenuContext) => TreeMenuEntry[]
+getGroupContextMenuItemsCallback?: (ctx: CanvasGroupMenuContext) => TreeMenuEntry[]   — ctx.node = group parent, + childNodes
+getCanvasContextMenuItemsCallback?: (ctx: CanvasMenuContext) => MenuEntry[]            — empty canvas, { controller } only (no built-ins)
 
 METRICS (bindable, read-only)
 ------------------------------
@@ -122,5 +143,5 @@ autoFocusOnSelect?: boolean         — Auto-pan to selected node + scroll page 
 CLIPBOARD
 ---------
 enableClipboard?: boolean           — Enable Ctrl+C/X/V shortcuts (default: false).
-transformDataForPaste?: (data, index, operation) => T — Transform data before paste.
-onPaste?: (result) => void          — Callback after paste operation.
+transformDataForPaste?: (ctx) => T|null — Ctrl+V transform (ctx.data, ctx.operation, ctx.rootIndex…).
+onNodePaste?: (result) => void      — Fired by the tree for every paste (Ctrl+V, menu, built-in 'paste').

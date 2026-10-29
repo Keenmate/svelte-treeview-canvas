@@ -46,15 +46,34 @@ import type {
 import type {
   LTreeNode,
   DropPosition,
-  ContextMenuItem,
-  ContextMenuDivider,
-  ContextMenuEntry,
+  TreeMenuContext,
+  TreeMenuItem,
+  TreeMenuEntry,
+  TreeAction,
+  TreeActionEventDetail,
+  MenuEntry,
+  MenuDivider,
+  NodeRef,
+  NodeEventContext,
+  SelectionChangeContext,
+  TreeCallbackContext,
+  ExpandOptions,
+  SortOptions,
+  TreeLabels,
   TreeNavigation,
   TreeNavigationOverrides,
   TreeControllerProps,
 } from '@keenmate/svelte-treeview-canvas';
 
-import { TreeController } from '@keenmate/svelte-treeview-canvas';
+import { TreeController, menuDivider } from '@keenmate/svelte-treeview-canvas';
+
+// Canvas event / menu contexts
+import type {
+  CanvasNodeDropContext,      // onNodeDrop: { source, target, position, controller }
+  CanvasGroupMenuContext,     // getGroupContextMenuItemsCallback: TreeMenuContext + childNodes
+  CanvasMenuContext,          // getCanvasContextMenuItemsCallback: { controller }
+  CanvasScrollToPathOptions,  // scrollToPath: { shouldExpandAncestors? }
+} from '@keenmate/svelte-treeview-canvas';
 
 LAYOUT TYPES
 -----------
@@ -164,29 +183,40 @@ interface CanvasLevelConfig {
 
 CONTEXT MENU (from core)
 -------------------------
-interface ContextMenuItem {
+// TreeMenuContext<T> = { node, path, parent, siblings, controller }
+interface TreeMenuItem<T> {            // core MenuItem<TreeMenuContext<T>, TreeAction>
   id?: string;
-  label: string;
+  action?: TreeAction;                 // built-in behaviour (or just the name as an entry)
+  text?: string;
   icon?: string;
+  tooltip?: string;
   shortcut?: string;
+  cssClass?: string | string[];
   isDisabled?: boolean;
   isVisible?: boolean;
-  className?: string;
-  onclick?: () => void | Promise<void>;
-  children?: ContextMenuEntry[];
+  isDanger?: boolean;
+  isToggled?: boolean;
+  // getTextCallback / getIconCallback / getIsDisabledCallback / … (ctx) win over the static fields
+  onClick?(detail: TreeActionEventDetail<T>): void | Promise<void>;
+  children?: TreeMenuEntry<T>[];
+  getChildrenCallback?(ctx): TreeMenuEntry<T>[] | Promise<TreeMenuEntry<T>[]>;
+  shouldCloseOnClick?: boolean;        // default true
 }
 
-interface ContextMenuDivider {
-  divider: true;
-  label?: string;
-}
+interface MenuDivider { divider: true; text?: string; }   // menuDivider(text?)
 
-type ContextMenuEntry = ContextMenuItem | ContextMenuDivider;
+type TreeMenuEntry<T> = TreeMenuItem<T> | MenuDivider | TreeAction;
+
+type TreeAction = 'copy' | 'cut' | 'paste' | 'delete' | 'expand' | 'collapse'
+  | 'expand-subtree' | 'collapse-subtree' | 'expand-all' | 'collapse-all'
+  | 'sort' | 'sort-subtree' | 'sort-all';
 
 NAVIGATION (from core)
 -----------------------
 interface TreeNavigation<T> {
   navTo(path: string): void;
+  navNext(): void;
+  navPrev(): void;
   navNextSibling(): void;
   navPrevSibling(): void;
   navInto(): void;
@@ -195,6 +225,14 @@ interface TreeNavigation<T> {
   navToggle(): void;
   navFirst(): void;
   navLast(): void;
+  navPageDown(): void;
+  navPageUp(): void;
+  navSelectNext(): void;      // Shift+nav: extend the selection
+  navSelectPrev(): void;
+  navSelectFirst(): void;
+  navSelectLast(): void;
+  navSelectPageDown(): void;
+  navSelectPageUp(): void;
 }
 
 type TreeNavigationOverrides<T> = Partial<TreeNavigation<T>>;

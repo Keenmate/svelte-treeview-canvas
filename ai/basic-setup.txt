@@ -24,8 +24,8 @@ QUICK START
     { id: 3, path: '1.2', name: 'Child B', hasChildren: false },
   ];
 
-  function sortByName(items: LTreeNode<any>[]) {
-    return [...items].sort((a, b) =>
+  function sortByName({ nodes }: { nodes: LTreeNode<any>[] }) {
+    return [...nodes].sort((a, b) =>
       (a.data?.name || '').localeCompare(b.data?.name || '')
     );
   }
@@ -33,7 +33,7 @@ QUICK START
 
 <div style="height: 500px;">
   <CanvasTree
-    {data}
+    nodes={data}
     idMember="id"
     pathMember="path"
     sortCallback={sortByName}
@@ -118,15 +118,16 @@ Use TreeController for search:
 
 <script>
   let ctrlRef;
-  let searchText = $state('');
+  let canvasTreeRef;
+  let searchTerm = $state('');
 
   function search() {
-    ctrlRef?.searchNodes(searchText);
+    canvasTreeRef?.searchNodes(searchTerm);   // or filterNodes(term) to hide non-matches
   }
 </script>
 
-<CanvasTree bind:controller={ctrlRef} ... />
-<input bind:value={searchText} oninput={search} />
+<CanvasTree bind:this={canvasTreeRef} ... />
+<input bind:value={searchTerm} oninput={search} />
 
 Non-matching nodes are dimmed. Matching nodes are highlighted.
 Use canvasTreeRef.nextResult() / prevResult() to navigate between results.

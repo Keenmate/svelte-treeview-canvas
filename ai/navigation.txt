@@ -10,6 +10,8 @@ Home:         Jump to first visible node
 End:          Jump to last visible node
 Space/Enter:  Toggle expand/collapse
 Backspace:    Collapse parent and navigate to it
+PageUp/Down:  Page through the visible nodes (the controller's default navigation)
+Shift+…:      Shift+Home/End/PageUp/PageDown/sibling arrows extend the selection
 
 The canvas must be focused to receive keyboard events (click canvas first).
 
@@ -103,7 +105,7 @@ AUTO-FOCUS ON SELECT
 ---------------------
 autoFocusOnSelect={true}
 
-When selectedPath changes (e.g., programmatically or via binding):
+When focusedPath changes (e.g., programmatically or via binding):
 1. Internal canvas viewport pans to show the selected node
 2. Browser page scrolls to make the canvas container visible
    (uses scrollIntoView({ block: 'nearest' }) — no jump if already visible)
