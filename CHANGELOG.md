@@ -42,7 +42,9 @@ Requires `@keenmate/svelte-treeview` 5.0.0-rc16. The canvas takes over the tree'
   `(ctx: TreeMenuContext)` (read the selection via `ctx.controller.getSelectedNodes()`),
   `getGroupContextMenuItemsCallback(parentNode, childNodes)` → `(ctx: CanvasGroupMenuContext)`
   (`ctx.node` = the group's parent, `ctx.childNodes`), `getCanvasContextMenuItemsCallback()` →
-  `(ctx: CanvasMenuContext)` (`{ controller }`; no node, so no built-ins there). Re-exported types
+  `(ctx: CanvasMenuContext)` (`{ node: null }` + `controller` — svelte-treeview's
+  `controller.menuContext(null)`; only the node-free built-ins `'paste'` (into the root),
+  `'expand-all'`, `'collapse-all'`, `'sort-all'` apply there, node-bound ones show disabled). Re-exported types
   `ContextMenuItem` / `ContextMenuDivider` / `ContextMenuEntry` → `TreeMenuItem` / `MenuDivider` /
   `TreeMenuEntry` (+ `TreeMenuContext`, `TreeAction`, `TreeActionEventDetail`, `MenuEntry`,
   `menuDivider`).
@@ -62,6 +64,13 @@ Requires `@keenmate/svelte-treeview` 5.0.0-rc16. The canvas takes over the tree'
 - **peerDependency `@keenmate/svelte-treeview` `^5.0.0-rc16`** (was `^5.0.0`).
 
 ### Added
+
+- **Built-ins on the empty-canvas menu**: it activates through svelte-treeview's
+  `controller.activateMenuItem(item, ctx)` with a node-less ctx (the canvas's own runner is gone),
+  so `'paste'` (into the root), `'expand-all'`, `'collapse-all'` and `'sort-all'` work there with
+  their texts from `labels`; node-bound built-ins are disabled. Same activation order as the node
+  menus (`beforeActionCallback` veto → `onClick` → built-in → `onAction`).
+  `getCanvasContextMenuItemsCallback` may return built-in names (`(MenuEntry | TreeAction)[]`).
 
 - Passthrough props (same as svelte-treeview's `<Tree>`): bindable **`expandedPaths`**,
   `onNodeExpand` / `onNodeCollapse` / `onExpandedChange` / `beforeExpandCallback`,

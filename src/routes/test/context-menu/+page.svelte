@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { CanvasMenuContext } from '$lib/types.js';
 	import { CanvasTree } from '$lib/index.js';
-	import type { TreeController, LTreeNode, TreeMenuEntry, TreeMenuContext, MenuEntry } from '@keenmate/svelte-treeview';
+	import type { TreeController, LTreeNode, TreeMenuEntry, TreeMenuContext, MenuEntry, TreeAction } from '@keenmate/svelte-treeview';
 	import { menuDivider } from '@keenmate/svelte-treeview';
 
 	/**
@@ -55,11 +55,23 @@
 		];
 	}
 
-	function getCanvasContextMenu(): MenuEntry<CanvasMenuContext<Item>>[] {
+	function getCanvasContextMenu(): (MenuEntry<CanvasMenuContext<Item>> | TreeAction)[] {
 		return [
 			{ id: 'expand-all', text: 'Expand All', onClick: () => { lastAction = 'canvas:expand-all'; } },
-			{ id: 'collapse-all', text: 'Collapse All', onClick: () => { lastAction = 'canvas:collapse-all'; } }
+			{ id: 'collapse-all', text: 'Collapse All', onClick: () => { lastAction = 'canvas:collapse-all'; } },
+			// Built-ins on the node-less menu: node-free ones run, node-bound ones are disabled.
+			menuDivider('Built-in'),
+			'collapse-all',
+			'delete'
 		];
+	}
+
+	// ?veto: beforeActionCallback cancels every built-in collapse-all.
+	function beforeAction(d: { action: string }) {
+		if (d.action === 'collapse-all' && new URLSearchParams(location.search).has('veto')) {
+			lastAction = `veto:${d.action}`;
+			return false;
+		}
 	}
 
 	$effect(() => {
@@ -89,6 +101,7 @@
 		getNodeContextMenuItemsCallback={getContextMenu}
 		getCanvasContextMenuItemsCallback={getCanvasContextMenu}
 		bind:visibleCount
+		beforeActionCallback={beforeAction}
 		onAction={(d) => { if (d.action !== 'custom') lastAction = `action:${d.action}:${d.path}`; }}
 	/>
 </div>

@@ -71,7 +71,7 @@ import { TreeController, menuDivider } from '@keenmate/svelte-treeview-canvas';
 import type {
   CanvasNodeDropContext,      // onNodeDrop: { source, target, position, controller }
   CanvasGroupMenuContext,     // getGroupContextMenuItemsCallback: TreeMenuContext + childNodes
-  CanvasMenuContext,          // getCanvasContextMenuItemsCallback: { controller }
+  CanvasMenuContext,          // getCanvasContextMenuItemsCallback: { node: null } + controller
   CanvasScrollToPathOptions,  // scrollToPath: { shouldExpandAncestors? }
 } from '@keenmate/svelte-treeview-canvas';
 

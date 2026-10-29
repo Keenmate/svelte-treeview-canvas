@@ -124,7 +124,7 @@ CONTEXT MENU CALLBACKS (return data)
 -------------------------------------
 getNodeContextMenuItemsCallback?: (ctx: TreeMenuContext) => TreeMenuEntry[]
 getGroupContextMenuItemsCallback?: (ctx: CanvasGroupMenuContext) => TreeMenuEntry[]   — ctx.node = group parent, + childNodes
-getCanvasContextMenuItemsCallback?: (ctx: CanvasMenuContext) => MenuEntry[]            — empty canvas, { controller } only (no built-ins)
+getCanvasContextMenuItemsCallback?: (ctx: CanvasMenuContext) => (MenuEntry | TreeAction)[]          — empty canvas, { node: null } + controller (node-free built-ins only: paste, expand-all, collapse-all, sort-all)
 
 METRICS (bindable, read-only)
 ------------------------------

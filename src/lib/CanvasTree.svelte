@@ -11,6 +11,7 @@
 		SelectionChangeContext,
 		TreeMenuContext,
 		TreeMenuEntry,
+		TreeAction,
 		MenuEntry,
 		ExpandOptions,
 		SortOptions,
@@ -199,7 +200,8 @@
 		// Data providers (get*Callback = returns data)
 		getNodeContextMenuItemsCallback?: (ctx: TreeMenuContext<T>) => TreeMenuEntry<T>[];
 		getGroupContextMenuItemsCallback?: (ctx: CanvasGroupMenuContext<T>) => TreeMenuEntry<T>[];
-		getCanvasContextMenuItemsCallback?: (ctx: CanvasMenuContext<T>) => MenuEntry<CanvasMenuContext<T>>[];
+		/** Empty-canvas menu: items, dividers and the node-free built-in names ('paste', 'expand-all', 'collapse-all', 'sort-all'). */
+		getCanvasContextMenuItemsCallback?: (ctx: CanvasMenuContext<T>) => (MenuEntry<CanvasMenuContext<T>> | TreeAction)[];
 
 		// Metrics (bindable, readonly)
 		layoutTime?: number;
@@ -923,8 +925,9 @@
 			},
 			onCanvasContextMenu: (clientX, clientY) => {
 				if (getCanvasContextMenuItemsHandler && ctrlRef) {
-					canvasMenuCtx = withController(ctrlRef, {});
-					canvasMenuEntries = getCanvasContextMenuItemsHandler(canvasMenuCtx);
+					const emptyCtx = ctrlRef.menuContext(null);
+					canvasMenuCtx = emptyCtx;
+					canvasMenuEntries = getCanvasContextMenuItemsHandler(emptyCtx);
 					if (canvasMenuEntries.length > 0) {
 						canvasMenuX = clientX;
 						canvasMenuY = clientY;
@@ -1602,11 +1605,6 @@
 	}
 
 	// ── Context menu keyboard shortcut handling ──────────────────────────
-	/** Options for activateCanvasMenuItem on the empty-canvas menu (node menus use the controller's handlers). */
-	function menuActivateOpts(event?: Event, trigger?: HTMLElement) {
-		return { event, trigger, beforeActionCallback, onAction };
-	}
-
 	function onKeyDown(e: KeyboardEvent) {
 		// Don't handle keys when focus is in input fields
 		if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
@@ -1644,7 +1642,7 @@
 			const match = ctrlRef && menuCtx ? findItemByShortcut(ctrlRef, canvasMenuEntries, menuCtx, e) : null;
 			if (match && ctrlRef && menuCtx) {
 				e.preventDefault();
-				void activateCanvasMenuItem(ctrlRef, match, menuCtx, menuActivateOpts(e)).finally(() => {
+				void activateCanvasMenuItem(ctrlRef, match, menuCtx, { event: e }).finally(() => {
 					if (match.shouldCloseOnClick !== false) canvasMenuVisible = false;
 				});
 				return;
@@ -2511,7 +2509,7 @@
 							if (entry.hasChildren) return;
 							const trigger = event.currentTarget as HTMLElement;
 							try {
-								await activateCanvasMenuItem(ctrl, item, menuCtx, menuActivateOpts(event, trigger));
+								await activateCanvasMenuItem(ctrl, item, menuCtx, { event, trigger });
 							} finally {
 								if (item.shouldCloseOnClick !== false) closeFn();
 								requestRedraw();

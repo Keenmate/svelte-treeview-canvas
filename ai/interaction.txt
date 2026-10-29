@@ -116,8 +116,10 @@ the node. Activation order: beforeActionCallback (false cancels) → item onClic
    ctx = TreeMenuContext of the group's parent node + childNodes
 
 3. Canvas menu: Right-click empty space
-   getCanvasContextMenuItemsCallback: (ctx: CanvasMenuContext) => MenuEntry[]
-   ctx = { controller } — no node, so built-in names don't apply there
+   getCanvasContextMenuItemsCallback: (ctx: CanvasMenuContext) => (MenuEntry | TreeAction)[]
+   ctx = { node: null } + controller (svelte-treeview controller.menuContext(null)) — only the
+   node-free built-ins apply: 'paste' (into the root), 'expand-all', 'collapse-all', 'sort-all'
+   (node-bound ones show disabled)
 
 import { menuDivider } from '@keenmate/svelte-treeview';
 

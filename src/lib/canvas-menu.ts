@@ -12,7 +12,6 @@ import type {
 	TreeMenuItem,
 	MenuEntry,
 	MenuItem,
-	ActionEventDetail,
 	TreeCallbackContext,
 	ResolvedMenuEntry
 } from '@keenmate/svelte-treeview';
@@ -32,75 +31,36 @@ export function withController<T, C extends object>(controller: TreeController<T
 	return obj as C & TreeCallbackContext<T>;
 }
 
-/** A menu ctx that has a node (node / group menus) — built-in actions apply. */
-function hasNode(ctx: object): ctx is TreeMenuContext<unknown> {
-	return !!(ctx as { node?: unknown }).node;
-}
-
-/** Resolve one menu level; built-in actions get their texts / state from the controller. */
+/** Resolve one menu level; built-in actions get their texts / state from the controller
+ *  (on the empty-canvas menu — no node — the node-bound built-ins come out disabled). */
 export function resolveCanvasMenu<T, Ctx extends TreeCallbackContext<T>>(
 	controller: TreeController<T>,
 	entries: readonly (MenuEntry<Ctx, string> | string)[] | null | undefined,
 	ctx: Ctx
 ): ResolvedMenuEntry<Ctx, string>[] {
 	return resolveMenuEntries<Ctx, string>(entries, ctx, (item) =>
-		hasNode(ctx)
-			? controller.menuItemDefaults(item as unknown as TreeMenuItem<T>, ctx as unknown as TreeMenuContext<T>)
-			: undefined
+		controller.menuItemDefaults(item as unknown as TreeMenuItem<T>, ctx as unknown as TreeMenuContext<T>)
 	);
 }
 
-/** Activate an item: `beforeActionCallback` → item `onClick(detail)` → built-in → `onAction`. */
-export async function activateCanvasMenuItem<T, Ctx extends TreeCallbackContext<T>>(
+/**
+ * Activate an item via svelte-treeview's `controller.activateMenuItem` — the built-in menu's path:
+ * `beforeActionCallback` → item `onClick(detail)` → built-in → `onAction`. On the empty-canvas
+ * menu (ctx without a node) only the node-free built-ins run (paste into the root, expand-all,
+ * collapse-all, sort-all).
+ */
+export function activateCanvasMenuItem<T, Ctx extends TreeCallbackContext<T>>(
 	controller: TreeController<T>,
 	item: MenuItem<Ctx, string>,
 	ctx: Ctx,
-	opts: {
-		trigger?: HTMLElement;
-		event?: Event;
-		// The tree's handlers (typed for the node menu's detail); the empty-canvas menu's detail
-		// has no node — documented on getCanvasContextMenuItemsCallback.
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		beforeActionCallback?: ((detail: any) => unknown) | null;
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		onAction?: ((detail: any) => void) | null;
-	} = {}
+	opts: { trigger?: HTMLElement; event?: Event } = {}
 ): Promise<boolean> {
-	if (hasNode(ctx)) {
-		// Node / group menu: the controller's runner (built-in actions act on ctx.node or the selection).
-		return controller.activateMenuItem(
-			item as unknown as TreeMenuItem<T>,
-			ctx as unknown as TreeMenuContext<T>,
-			opts.trigger,
-			opts.event
-		);
-	}
-	// Empty-canvas menu: no node, so no built-ins — same order without that step.
-	const detail = withController(controller, {
-		...ctx,
-		action: (item.action ?? 'custom') as string,
-		...(item.id !== undefined ? { id: item.id } : {}),
-		item,
-		source: 'context-menu',
-		sourceEvent: opts.event,
-		triggerElement: opts.trigger,
-		dataset: {}
-	}) as unknown as ActionEventDetail<Ctx, string>;
-	if (opts.beforeActionCallback) {
-		try {
-			if ((await opts.beforeActionCallback(detail)) === false) return false;
-		} catch (error) {
-			console.error('[CanvasTree] beforeActionCallback threw', error);
-			return false;
-		}
-	}
-	try {
-		await item.onClick?.(detail);
-	} catch (error) {
-		console.error('[CanvasTree] menu item onClick threw', error);
-	}
-	opts.onAction?.(detail);
-	return true;
+	return controller.activateMenuItem(
+		item as unknown as TreeMenuItem<T>,
+		ctx as unknown as TreeMenuContext<T>,
+		opts.trigger,
+		opts.event
+	);
 }
 
 /** Find a visible, enabled item whose `shortcut` matches the key event (searches static children too). */

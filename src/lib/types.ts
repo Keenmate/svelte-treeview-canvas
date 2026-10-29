@@ -22,9 +22,10 @@ export interface CanvasGroupMenuContext<T> extends TreeMenuContext<T> {
 	childNodes: LTreeNode<T>[];
 }
 
-/** ctx of `getCanvasContextMenuItemsCallback` (right-click on empty canvas) — just the
- *  controller; no node, so built-in action names don't apply there. */
-export type CanvasMenuContext<T> = TreeCallbackContext<T>;
+/** ctx of `getCanvasContextMenuItemsCallback` (right-click on empty canvas) — `{ node: null }` +
+ *  controller; only the node-free built-ins apply (paste into the root, expand-all, collapse-all,
+ *  sort-all). */
+export type CanvasMenuContext<T> = TreeCallbackContext<T> & { node: null };
 
 /** Options of `scrollToPath` — the canvas subset of svelte-treeview's `ScrollToPathOptions`. */
 export interface CanvasScrollToPathOptions {

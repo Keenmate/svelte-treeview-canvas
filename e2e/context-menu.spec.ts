@@ -10,7 +10,7 @@ import { waitForCanvas, fitAndSettle, rightClickNode } from './helpers';
 const PAGE = '/test/context-menu';
 
 const menu = (page: import('@playwright/test').Page) => page.locator('.canvas-tree-ctx-menu');
-const menuItem = (page: import('@playwright/test').Page, label: string) =>
+const menuItem = (page: import('@playwright/test').Page, label: string | RegExp) =>
 	page.locator('.canvas-tree-ctx-menu-item', { hasText: label });
 const lastAction = (page: import('@playwright/test').Page) => page.getByTestId('last-action');
 
@@ -58,10 +58,11 @@ test('right-clicking empty canvas opens the canvas-level menu', async ({ page })
 	// Bottom-right corner is empty space (nodes lay out from the top-left).
 	await page.mouse.click(box!.x + box!.width - 24, box!.y + box!.height - 24, { button: 'right' });
 
-	await expect(menuItem(page, 'Expand All')).toBeVisible();
-	await expect(menuItem(page, 'Collapse All')).toBeVisible();
+	// Case-sensitive: the built-in 'collapse-all' ("Collapse all") is on this menu too.
+	await expect(menuItem(page, /Expand All/)).toBeVisible();
+	await expect(menuItem(page, /Collapse All/)).toBeVisible();
 
-	await menuItem(page, 'Collapse All').click();
+	await menuItem(page, /Collapse All/).click();
 	await expect(lastAction(page)).toHaveText('canvas:collapse-all');
 });
 
@@ -76,4 +77,38 @@ test('a built-in action name renders with its label text and runs (onAction afte
 	await expect(lastAction(page)).toHaveText('action:collapse-subtree:1');
 	await expect(menu(page)).toHaveCount(0);
 	await expect(visible).toHaveText('2'); // Documents + Downloads
+});
+
+test.describe('empty-canvas menu built-ins (controller.activateMenuItem with a node-less ctx)', () => {
+	const openCanvasMenu = async (page: import('@playwright/test').Page) => {
+		const box = await page.locator('[data-testid="canvas-host"] canvas').boundingBox();
+		await page.mouse.click(box!.x + box!.width - 24, box!.y + box!.height - 24, { button: 'right' });
+		await expect(menu(page)).toBeVisible();
+	};
+	const builtIn = (page: import('@playwright/test').Page, action: string) =>
+		page.locator(`.canvas-tree-ctx-menu-item[data-action="${action}"]`);
+
+	test('node-free built-in runs (collapse-all), node-bound one is disabled', async ({ page }) => {
+		const visible = page.getByTestId('visible-count');
+		await expect(visible).toHaveText('4');
+		await openCanvasMenu(page);
+		await expect(builtIn(page, 'collapse-all')).toHaveText(/Collapse all/);
+		await expect(builtIn(page, 'delete')).toBeDisabled();
+		await builtIn(page, 'collapse-all').click();
+		await expect(lastAction(page)).toHaveText('action:collapse-all:undefined');
+		await expect(visible).toHaveText('2');
+		await expect(menu(page)).toHaveCount(0);
+	});
+
+	test('beforeActionCallback vetoes it', async ({ page }) => {
+		await page.goto(PAGE + '?veto');
+		await waitForCanvas(page);
+		await fitAndSettle(page);
+		const visible = page.getByTestId('visible-count');
+		await expect(visible).toHaveText('4');
+		await openCanvasMenu(page);
+		await builtIn(page, 'collapse-all').click();
+		await expect(lastAction(page)).toHaveText('veto:collapse-all');
+		await expect(visible).toHaveText('4');
+	});
 });
