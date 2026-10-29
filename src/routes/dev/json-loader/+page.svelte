@@ -2108,7 +2108,7 @@
 							bind:drawTime={sunburstDrawTime}
 							bind:visibleCount={sunburstVisibleCount}
 							bind:totalCount={sunburstTotalCount}
-							showDotGrid={false}
+							isDotGridShown={false}
 						>
 							{#snippet tooltipSnippet(node, label)}
 								<strong>{label}</strong>

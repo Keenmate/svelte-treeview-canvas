@@ -46,15 +46,15 @@ layoutMode?: LayoutMode             — 'tree'|'balanced'|'fishbone'|'radial'|'b
 growthDirection?: GrowthDirection    — 'right'|'left'|'down'|'up' (default: 'right'). Bindable.
 initialViewport?: InitialViewport   — 'root'|'origin' (default: 'root').
 balancedSplit?: 'even'|'weighted'   — How to split children in balanced mode (default: 'even').
-fishboneCrossNav?: boolean          — Enable cross-side navigation in fishbone (default: false).
+isFishboneCrossNavEnabled?: boolean — Enable cross-side navigation in fishbone (default: false).
 radialStartAngle?: number           — Starting angle for radial layout (default: 0).
 radialSpacing?: number              — Spacing between radial nodes.
 sunburstRingWidth?: number          — Ring width for sunburst layout (default: 100).
 sunburstRootTitle?: string          — Center label for sunburst.
-groupSiblings?: boolean             — Group siblings in boxes (default: true). Bindable.
-showDotGrid?: boolean               — Show background dot grid (default: false). Bindable.
+shouldGroupSiblings?: boolean       — Group siblings in boxes (default: true). Bindable.
+isDotGridShown?: boolean            — Show background dot grid (default: false). Bindable.
 clickBehavior?: ClickBehavior       — 'select'|'expand'|'expand-and-focus' (default: 'expand-and-focus'). Bindable.
-collapsible?: boolean               — Allow expand/collapse (default: true).
+isCollapsingEnabled?: boolean       — Allow expand/collapse (default: true).
 
 NODE GEOMETRY PROPS (override theme)
 -------------------------------------
@@ -138,10 +138,10 @@ UI/BEHAVIOR
 tooltipSnippet?: Snippet            — Custom tooltip content snippet.
 theme?: Partial<CanvasTheme>        — Theme overrides (highest priority).
 navigationOverrides?: TreeNavigationOverrides<T> — Override individual nav methods.
-autoFocusOnSelect?: boolean         — Auto-pan to selected node + scroll page (default: false).
+shouldFocusOnSelect?: boolean       — Auto-pan to selected node + scroll page (default: false).
 
 CLIPBOARD
 ---------
-enableClipboard?: boolean           — Enable Ctrl+C/X/V shortcuts (default: false).
+isClipboardEnabled?: boolean        — Enable Ctrl+C/X/V shortcuts (default: false).
 transformDataForPaste?: (ctx) => T|null — Ctrl+V transform (ctx.data, ctx.operation, ctx.rootIndex…).
 onNodePaste?: (result) => void      — Fired by the tree for every paste (Ctrl+V, menu, built-in 'paste').

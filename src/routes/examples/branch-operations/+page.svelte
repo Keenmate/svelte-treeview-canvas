@@ -235,7 +235,7 @@
 		}
 	}
 
-	// Required by enableClipboard — transforms data for the clipboard snapshot
+	// Required by isClipboardEnabled — transforms data for the clipboard snapshot
 	function transformDataForPaste({ data }: { data: OrgNode }): OrgNode | null {
 		return { ...data, id: nextId++ };
 	}
@@ -512,8 +512,8 @@
 					bind:totalCount
 					bind:growthDirection
 					bind:clickBehavior
-					groupSiblings={true}
-					enableClipboard={true}
+					shouldGroupSiblings={true}
+					isClipboardEnabled={true}
 					{transformDataForPaste}
 					onNodePaste={handlePaste}
 					getNodeLabelCallback={(node) => node.data?.name || node.path}

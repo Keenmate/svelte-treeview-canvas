@@ -320,7 +320,7 @@
 				nodeGap={6}
 				columnGap={45}
 				fontSize={12}
-				showDotGrid={true}
+				isDotGridShown={true}
 				bind:focusedPath
 				bind:controller={ctrlRef}
 				getNodeLabelCallback={(node) => node.data?.name || node.path}

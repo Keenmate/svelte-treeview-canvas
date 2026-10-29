@@ -67,7 +67,7 @@ At root: only spine-forward key enters children.
 At spine nodes (depth 1): spine keys navigate between spine siblings,
   branch keys enter children or cross to opposite side.
 At branch nodes (depth 2+): standard navigation, with optional
-  cross-side navigation (fishboneCrossNav prop).
+  cross-side navigation (isFishboneCrossNavEnabled prop).
 
 SPATIAL NAVIGATION INTERNALS
 ------------------------------
@@ -103,7 +103,7 @@ Available override methods:
 
 AUTO-FOCUS ON SELECT
 ---------------------
-autoFocusOnSelect={true}
+shouldFocusOnSelect={true}
 
 When focusedPath changes (e.g., programmatically or via binding):
 1. Internal canvas viewport pans to show the selected node

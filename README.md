@@ -21,6 +21,9 @@ Breaking — the same vocabulary as svelte-treeview / web-treeview (see CHANGELO
   `onNodeExpand` / `onNodeCollapse` / `onExpandedChange` / `beforeExpandCallback`.
 - **Sorting**: `isSortingEnabled`, `sortNodes` / `sortAll`, `onNodesReorder`. Also `labels`, `onTreeChange`.
 - **`expandLevel` defaults to `0`** (only the roots), like svelte-treeview.
+- **Boolean props use is / should prefixes**: `isCollapsingEnabled`, `shouldGroupSiblings`, `isDotGridShown`,
+  `isFishboneCrossNavEnabled`, `shouldFocusOnSelect`, `isClipboardEnabled`; `FocusOptions { shouldAnimate, shouldSelect }`.
+- Requires `@keenmate/svelte-treeview` `^5.0.0-rc16` (peerDependency).
 - Fix: PageUp / PageDown and Shift+navigation no longer recurse forever.
 
 ## What's New in v1.0.0-rc04

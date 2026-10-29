@@ -60,8 +60,8 @@
 		nodeCountTarget: number;
 		growthDirection: GrowthDirection;
 		initialViewport: InitialViewport;
-		groupSiblings: boolean;
-		showDotGrid: boolean;
+		shouldGroupSiblings: boolean;
+		isDotGridShown: boolean;
 		clickBehavior: ClickBehavior;
 		columnGap: number;
 		gridNodeMaxW: number;
@@ -101,8 +101,8 @@
 	let treeKey = $state(0);
 	let growthDirection: GrowthDirection = $state(saved.growthDirection ?? 'right');
 	let initialViewport: InitialViewport = $state(saved.initialViewport ?? 'root');
-	let groupSiblings = $state(saved.groupSiblings ?? true);
-	let showDotGrid = $state(saved.showDotGrid ?? false);
+	let shouldGroupSiblings = $state(saved.shouldGroupSiblings ?? true);
+	let isDotGridShown = $state(saved.isDotGridShown ?? false);
 	let focusPath = $state('1.1');
 
 	let clickBehavior: ClickBehavior = $state(saved.clickBehavior ?? 'expand');
@@ -130,10 +130,10 @@
 	let showLevelConfig = $state(false);
 	let levelConfigEnabled = $state(saved.levelConfigEnabled ?? [false, false, false, false]);
 	let levelConfigValues = $state<CanvasLevelConfig[]>(saved.levelConfigValues ?? [
-		{ color: '#ef4444', nodeHeight: 36, groupSiblings: true, nodeGap: 6 },
-		{ color: '#3b82f6', nodeHeight: 28, groupSiblings: true, nodeGap: 6 },
-		{ color: '#10b981', nodeHeight: 24, groupSiblings: false, nodeGap: 6 },
-		{ color: '#8b5cf6', nodeHeight: 22, groupSiblings: true, nodeGap: 4 }
+		{ color: '#ef4444', nodeHeight: 36, shouldGroupSiblings: true, nodeGap: 6 },
+		{ color: '#3b82f6', nodeHeight: 28, shouldGroupSiblings: true, nodeGap: 6 },
+		{ color: '#10b981', nodeHeight: 24, shouldGroupSiblings: false, nodeGap: 6 },
+		{ color: '#8b5cf6', nodeHeight: 22, shouldGroupSiblings: true, nodeGap: 4 }
 	]);
 
 	let levelConfig = $derived(
@@ -157,7 +157,7 @@
 	let dropLog = $state<string[]>([]);
 
 	// Clipboard
-	let enableClipboard = $state(true);
+	let isClipboardEnabled = $state(true);
 	let nextPasteId = $state(10000);
 	function transformDataForPaste({ data, operation }: NodeTransformCallbackContext<TreeItem>): TreeItem | null {
 		return {
@@ -188,8 +188,8 @@
 	// ── Persist config to localStorage ────────────────────────────────────
 	$effect(() => {
 		const config: StoredConfig = {
-			nodeCountTarget, growthDirection, initialViewport, groupSiblings,
-			showDotGrid, clickBehavior, columnGap, gridNodeMaxW, rangeSelectionMode,
+			nodeCountTarget, growthDirection, initialViewport, shouldGroupSiblings,
+			isDotGridShown, clickBehavior, columnGap, gridNodeMaxW, rangeSelectionMode,
 			nodeHeight, nodeGap, levelSpacingV, nodePaddingX, nodeMinWidth,
 			colorBarW, depthColors, fontSize, fontFamily, zoomLodText, zoomLodSimple,
 			gridGap, groupPadding, maxGridCols, levelConfigEnabled, levelConfigValues,
@@ -212,7 +212,7 @@
 
 		if (isMulti) {
 			// ── Multi-selection context menu ─────────────────────────────
-			if (enableClipboard) {
+			if (isClipboardEnabled) {
 				items.push({
 					icon: '\u{1F4CB}',
 					text: `Copy ${selCount} nodes`,
@@ -320,7 +320,7 @@
 			onClick: () => navigator.clipboard.writeText(node.path)
 		});
 
-		if (enableClipboard) {
+		if (isClipboardEnabled) {
 			items.push({ divider: true, text: 'Clipboard' });
 			items.push({
 				icon: '\u{1F4CB}',
@@ -400,7 +400,7 @@
 			onClick: () => canvasTreeRef?.focusOnPath(parentNode.path)
 		});
 
-		if (enableClipboard && ctrlRef?.hasClipboardContent()) {
+		if (isClipboardEnabled && ctrlRef?.hasClipboardContent()) {
 			items.push({ divider: true, text: 'Clipboard' });
 			items.push({
 				icon: '\u{1F4CC}',
@@ -639,11 +639,11 @@
 			</span>
 
 			<label class="group-toggle">
-				<input type="checkbox" bind:checked={groupSiblings} />
+				<input type="checkbox" bind:checked={shouldGroupSiblings} />
 				Group siblings
 			</label>
 			<label class="group-toggle">
-				<input type="checkbox" bind:checked={showDotGrid} />
+				<input type="checkbox" bind:checked={isDotGridShown} />
 				Dot grid
 			</label>
 
@@ -755,8 +755,8 @@
 										levelConfigValues[lvl] = { ...levelConfigValues[lvl], nodeGap: +(e.target as HTMLInputElement).value };
 									}} min="0" max="20" step="1" style="width: 38px" /></label>
 									<label class="level-group-toggle">
-										<input type="checkbox" checked={levelConfigValues[lvl].groupSiblings ?? true} onchange={(e) => {
-											levelConfigValues[lvl] = { ...levelConfigValues[lvl], groupSiblings: (e.target as HTMLInputElement).checked };
+										<input type="checkbox" checked={levelConfigValues[lvl].shouldGroupSiblings ?? true} onchange={(e) => {
+											levelConfigValues[lvl] = { ...levelConfigValues[lvl], shouldGroupSiblings: (e.target as HTMLInputElement).checked };
 										}} />
 										Group
 									</label>
@@ -844,8 +844,8 @@
 					bind:totalCount
 					bind:growthDirection
 					{initialViewport}
-					bind:groupSiblings
-					bind:showDotGrid
+					bind:shouldGroupSiblings
+					bind:isDotGridShown
 					bind:clickBehavior
 					bind:nodeHeight
 					bind:nodeMinWidth
@@ -869,7 +869,7 @@
 					getGroupContextMenuItemsCallback={getGroupContextMenu}
 					getCanvasContextMenuItemsCallback={getCanvasEmptyContextMenu}
 					{onNodeDrop}
-					{enableClipboard}
+					{isClipboardEnabled}
 					{transformDataForPaste}
 					onNodePaste={handlePaste}
 				/>

@@ -40,8 +40,8 @@
 	let radialStartAngle = $state(0);
 	let radialSpacing = $state(160);
 	let sunburstRingWidth = $state(100);
-	let groupSiblings = $state(false);
-	let showDotGrid = $state(true);
+	let shouldGroupSiblings = $state(false);
+	let isDotGridShown = $state(true);
 
 	let layoutTime = $state(0);
 	let drawTime = $state(0);
@@ -136,13 +136,13 @@
 
 		{#if layoutMode === 'tree'}
 			<label class="checkbox">
-				<input type="checkbox" bind:checked={groupSiblings} />
+				<input type="checkbox" bind:checked={shouldGroupSiblings} />
 				Group siblings
 			</label>
 		{/if}
 
 		<label class="checkbox">
-			<input type="checkbox" bind:checked={showDotGrid} />
+			<input type="checkbox" bind:checked={isDotGridShown} />
 			Dot grid
 		</label>
 
@@ -167,8 +167,8 @@
 			displayValueMember="name"
 			{layoutMode}
 			{growthDirection}
-			{groupSiblings}
-			{showDotGrid}
+			{shouldGroupSiblings}
+			{isDotGridShown}
 			{balancedSplit}
 			{radialStartAngle}
 			{radialSpacing}

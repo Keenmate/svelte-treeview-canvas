@@ -597,8 +597,8 @@ export function createInteractionManager<T>(
 		const anchor = options?.anchor ?? 'center';
 		const zoomOpt = options?.zoom ?? 'auto';
 		const padding = options?.padding ?? 40;
-		const animate = options?.animate ?? true;
-		const select = options?.select ?? true;
+		const animate = options?.shouldAnimate ?? true;
+		const select = options?.shouldSelect ?? true;
 
 		if (select) {
 			callbacks.onSelectionChange(ln.node.path);

@@ -54,6 +54,12 @@ Requires `@keenmate/svelte-treeview` 5.0.0-rc16. The canvas takes over the tree'
 - **`scrollToPath(path, options?)`** — `{ shouldExpandAncestors = true }` (`CanvasScrollToPathOptions`,
   the canvas subset of svelte-treeview's `ScrollToPathOptions`).
 - `searchNodes(term)` / `filterNodes(term)` (parameter renamed from `query`).
+- **Boolean props renamed to the is / should prefixes:** `collapsible` → `isCollapsingEnabled`,
+  `groupSiblings` → `shouldGroupSiblings` (also the `CanvasLevelConfig` field), `showDotGrid` →
+  `isDotGridShown`, `fishboneCrossNav` → `isFishboneCrossNavEnabled`, `autoFocusOnSelect` →
+  `shouldFocusOnSelect`, `enableClipboard` → `isClipboardEnabled`. `FocusOptions` `{ animate, select }`
+  → `{ shouldAnimate, shouldSelect }`.
+- **peerDependency `@keenmate/svelte-treeview` `^5.0.0-rc16`** (was `^5.0.0`).
 
 ### Added
 
@@ -67,6 +73,10 @@ Requires `@keenmate/svelte-treeview` 5.0.0-rc16. The canvas takes over the tree'
   `ExpandOptions`, `SortOptions`, `TreeLabels`, `TreeNavigation`, `TreeNavigationOverrides`.
 - Context-menu items render `isToggled` (`role="menuitemcheckbox"` + `aria-checked`), `tooltip`,
   `data-action` / `data-id`, and async submenus (`getChildrenCallback`).
+- The canvas menu runs on svelte-treeview's public custom-renderer API (`menuContext`,
+  `menuItemDefaults`, `activateMenuItem`, `resolveMenuEntries`, `getMenuChildren`) — the private
+  cast and the copied resolver are gone, so node / group menu activation is the tree's own path
+  (`beforeActionCallback` veto → `onClick` → built-in → `onAction`).
 
 ### Fixed
 

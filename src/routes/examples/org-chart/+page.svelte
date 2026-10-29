@@ -226,9 +226,9 @@
 		growthDirection: GrowthDirection;
 		initialViewport: InitialViewport;
 		clickBehavior: ClickBehavior;
-		groupSiblings: boolean;
+		shouldGroupSiblings: boolean;
 		compactMode: boolean;
-		autoFocusOnSelect: boolean;
+		shouldFocusOnSelect: boolean;
 		activeTheme: ThemeName;
 	}
 
@@ -249,9 +249,9 @@
 	let growthDirection: GrowthDirection = $state(saved.growthDirection ?? 'right');
 	let initialViewport: InitialViewport = $state(saved.initialViewport ?? 'root');
 	let clickBehavior: ClickBehavior = $state(saved.clickBehavior ?? 'expand-and-focus');
-	let groupSiblings = $state(saved.groupSiblings ?? true);
+	let shouldGroupSiblings = $state(saved.shouldGroupSiblings ?? true);
 	let compactMode = $state(saved.compactMode ?? false);
-	let autoFocusOnSelect = $state(saved.autoFocusOnSelect ?? false);
+	let shouldFocusOnSelect = $state(saved.shouldFocusOnSelect ?? false);
 	let focusedPath = $state<string | null>(null);
 	let ctrlRef = $state<TreeController<Person> | null>(null);
 	let canvasTreeRef: ReturnType<typeof CanvasTree> | undefined = $state();
@@ -268,7 +268,7 @@
 	$effect(() => {
 		const config: StoredConfig = {
 			layoutMode, growthDirection, initialViewport, clickBehavior,
-			groupSiblings, compactMode, autoFocusOnSelect, activeTheme,
+			shouldGroupSiblings, compactMode, shouldFocusOnSelect, activeTheme,
 		};
 		localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
 	});
@@ -803,7 +803,7 @@
 			<button class="btn secondary" onclick={() => canvasTreeRef?.zoomToFit()}>Zoom to Fit</button>
 
 			<label class="group-toggle">
-				<input type="checkbox" bind:checked={groupSiblings} />
+				<input type="checkbox" bind:checked={shouldGroupSiblings} />
 				Group peers
 			</label>
 
@@ -813,7 +813,7 @@
 			</label>
 
 			<label class="group-toggle">
-				<input type="checkbox" bind:checked={autoFocusOnSelect} />
+				<input type="checkbox" bind:checked={shouldFocusOnSelect} />
 				Auto-focus
 			</label>
 
@@ -876,7 +876,7 @@
 				{layoutMode}
 				bind:growthDirection
 				{initialViewport}
-				bind:groupSiblings
+				bind:shouldGroupSiblings
 				bind:clickBehavior
 				nodeHeight={cardH}
 				nodeMinWidth={CARD_W}
@@ -893,13 +893,13 @@
 				gridGap={6}
 				groupPadding={10}
 				maxGridCols={4}
-				showDotGrid={isFuturistic}
+				isDotGridShown={isFuturistic}
 				theme={themeOverrides}
 				{renderNodeCallback}
 				{measureNodeWidthCallback}
 				getNodeLabelCallback={(node) => node.data?.name || node.path}
 				getNodeContextMenuItemsCallback={getContextMenu}
-			{autoFocusOnSelect}
+			{shouldFocusOnSelect}
 			/>
 		</div>
 

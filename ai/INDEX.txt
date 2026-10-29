@@ -18,7 +18,7 @@ KEYWORD INDEX
 
 A
 -
-autoFocusOnSelect → interaction.txt, props-reference.txt
+shouldFocusOnSelect → interaction.txt, props-reference.txt
 
 B
 -
@@ -45,7 +45,7 @@ drawTime → props-reference.txt
 
 E
 -
-enableClipboard → interaction.txt, props-reference.txt
+isClipboardEnabled → interaction.txt, props-reference.txt
 
 F
 -
@@ -63,7 +63,7 @@ getGroupContextMenuItemsCallback → interaction.txt
 getNodeContextMenuItemsCallback → interaction.txt
 gridGap → props-reference.txt
 groupPadding → props-reference.txt
-groupSiblings → props-reference.txt
+shouldGroupSiblings → props-reference.txt
 growthDirection → basic-setup.txt, props-reference.txt
 
 I
@@ -119,7 +119,7 @@ S
 focusedPath → interaction.txt, props-reference.txt
 selectedPaths → interaction.txt, props-reference.txt
 selectionRectangle → interaction.txt
-showDotGrid → props-reference.txt
+isDotGridShown → props-reference.txt
 sunburst layout → basic-setup.txt
 
 T
@@ -158,7 +158,7 @@ Q: How do I add right-click context menus?
 A: -> interaction.txt (getNodeContextMenuItemsCallback)
 
 Q: How do I enable copy/cut/paste?
-A: -> interaction.txt (enableClipboard)
+A: -> interaction.txt (isClipboardEnabled)
 
 Q: How does keyboard navigation work?
 A: -> navigation.txt

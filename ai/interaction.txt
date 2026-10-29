@@ -68,7 +68,7 @@ Visual indicators colored by theme: dzBefore, dzAfter, dzChild.
 
 CLIPBOARD
 ----------
-enableClipboard={true} activates Ctrl+C/X/V keyboard shortcuts.
+isClipboardEnabled={true} activates Ctrl+C/X/V keyboard shortcuts.
 
 Ctrl+C:  Copy selected nodes to clipboard
 Ctrl+X:  Cut selected nodes (dimmed at 40% opacity)
@@ -76,12 +76,12 @@ Ctrl+V:  Paste under selected node as children
 Escape:  Cancel cut (removes dimming)
 
 Props:
-  enableClipboard: boolean            — Enable shortcuts (default: false)
+  isClipboardEnabled: boolean            — Enable shortcuts (default: false)
   transformDataForPaste: (ctx) => T | null — Transform before paste (ctx.data, ctx.operation, …)
   onNodePaste: (result) => void       — Fired by the tree for every paste (Ctrl+V, menu items, built-in 'paste')
 
 <CanvasTree
-  enableClipboard={true}
+  isClipboardEnabled={true}
   transformDataForPaste={({ data, operation }) => ({
     ...data,
     id: crypto.randomUUID(),
@@ -154,8 +154,8 @@ canvasTreeRef.focusOnPath('1.2.3', {
   anchor: 'center',        // FocusAnchor
   zoom: 1.0,               // number | 'keep' | 'auto'
   padding: 50,             // px padding around node
-  animate: true,           // smooth animation
-  select: true,            // also select the node
+  shouldAnimate: true,           // smooth animation
+  shouldSelect: true,            // also select the node
 });
 
 canvasTreeRef.focusOnNode(node, options);

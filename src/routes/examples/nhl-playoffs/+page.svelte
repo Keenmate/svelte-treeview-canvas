@@ -582,16 +582,16 @@
 				</div>
 				<div class="focus-group">
 					<span class="focus-group-label">Behavior</span>
-					<button class="btn focus-btn" onclick={() => focus({ animate: false })}>no animation</button>
-					<button class="btn focus-btn" onclick={() => focus({ select: false })}>no select</button>
-					<button class="btn focus-btn" onclick={() => focus({ animate: false, select: false })}>no anim + no select</button>
+					<button class="btn focus-btn" onclick={() => focus({ shouldAnimate: false })}>no animation</button>
+					<button class="btn focus-btn" onclick={() => focus({ shouldSelect: false })}>no select</button>
+					<button class="btn focus-btn" onclick={() => focus({ shouldAnimate: false, shouldSelect: false })}>no anim + no select</button>
 				</div>
 				<div class="focus-group">
 					<span class="focus-group-label">Combined</span>
 					<button class="btn focus-btn" onclick={() => focus({ anchor: 'center-right', zoom: 1 })}>center-right, zoom 1</button>
 					<button class="btn focus-btn" onclick={() => focus({ anchor: 'top-right', zoom: 1 })}>top-right, zoom 1</button>
 					<button class="btn focus-btn" onclick={() => focus({ anchor: 'top-left', zoom: 0.5, padding: 80 })}>top-left, zoom 0.5, pad 80</button>
-					<button class="btn focus-btn" onclick={() => focus({ anchor: 'center-left', zoom: 'keep', animate: false })}>center-left, keep zoom, instant</button>
+					<button class="btn focus-btn" onclick={() => focus({ anchor: 'center-left', zoom: 'keep', shouldAnimate: false })}>center-left, keep zoom, instant</button>
 				</div>
 			</div>
 		</div>
@@ -619,10 +619,10 @@
 				bind:totalCount
 				bind:growthDirection
 				{initialViewport}
-				groupSiblings={false}
+				shouldGroupSiblings={false}
 				clickBehavior="select"
 				dragDropMode="none"
-				collapsible={false}
+				isCollapsingEnabled={false}
 				nodeHeight={CARD_H}
 				nodeMinWidth={CARD_W}
 				nodePaddingX={PAD}

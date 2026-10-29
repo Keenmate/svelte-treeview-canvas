@@ -247,7 +247,7 @@ function computeLayoutGroupedH<T>(
 			const childGap = resolveLevel(config.levelOverrides, childDepth, 'nodeGap', config.nodeGap);
 			const childMaxGridCols = resolveLevel(config.levelOverrides, childDepth, 'maxGridCols', config.maxGridCols);
 			const childGridNodeMaxW = resolveLevel(config.levelOverrides, childDepth, 'gridNodeMaxW', config.gridNodeMaxW);
-			const childGroupSiblings = resolveLevel(config.levelOverrides, childDepth, 'groupSiblings', true);
+			const childGroupSiblings = resolveLevel(config.levelOverrides, childDepth, 'shouldGroupSiblings', true);
 
 			const collapsed: LTreeNode<T>[] = [];
 			const expanded: LTreeNode<T>[] = [];
@@ -397,7 +397,7 @@ function computeLayoutGroupedV<T>(
 			const childGap = resolveLevel(config.levelOverrides, childDepth, 'nodeGap', config.nodeGap);
 			const childMaxGridCols = resolveLevel(config.levelOverrides, childDepth, 'maxGridCols', config.maxGridCols);
 			const childGridNodeMaxW = resolveLevel(config.levelOverrides, childDepth, 'gridNodeMaxW', config.gridNodeMaxW);
-			const childGroupSiblings = resolveLevel(config.levelOverrides, childDepth, 'groupSiblings', true);
+			const childGroupSiblings = resolveLevel(config.levelOverrides, childDepth, 'shouldGroupSiblings', true);
 
 			const collapsed: LTreeNode<T>[] = [];
 			const expanded: LTreeNode<T>[] = [];
@@ -561,8 +561,8 @@ export function computeLayout<T>(
 	}
 
 	// Default: 'tree' layout
-	// Use grouped layout if global groupSiblings is true OR any level overrides it to true
-	const anyLevelGrouped = config.levelOverrides?.some(l => l.groupSiblings === true) ?? false;
+	// Use grouped layout if global shouldGroupSiblings is true OR any level overrides it to true
+	const anyLevelGrouped = config.levelOverrides?.some(l => l.shouldGroupSiblings === true) ?? false;
 	const useGrouped = grouped || anyLevelGrouped;
 
 	const isV = growthDirection === 'up' || growthDirection === 'down';

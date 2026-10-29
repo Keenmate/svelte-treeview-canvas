@@ -90,7 +90,7 @@ export interface LayoutResult<T> {
 /** Per-level overrides — all optional, fall back to global CanvasTree props */
 export interface CanvasLevelConfig {
 	color?: string;
-	groupSiblings?: boolean;
+	shouldGroupSiblings?: boolean;
 	nodeHeight?: number;
 	nodeMinWidth?: number;
 	nodePaddingX?: number;
@@ -247,9 +247,9 @@ export interface FocusOptions {
 	/** Padding in px from viewport edge for edge anchors. Default: 40 */
 	padding?: number;
 	/** Whether to animate the transition. Default: true */
-	animate?: boolean;
+	shouldAnimate?: boolean;
 	/** Whether to update focusedPath. Default: true */
-	select?: boolean;
+	shouldSelect?: boolean;
 }
 
 // ── Drop Zone Types ──────────────────────────────────────────────────────

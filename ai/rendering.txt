@@ -170,7 +170,7 @@ DOM-based tooltip over hovered nodes:
 
 CUT NODE RENDERING
 -------------------
-When enableClipboard is true and nodes are cut (via Ctrl+X):
+When isClipboardEnabled is true and nodes are cut (via Ctrl+X):
 - Cut nodes render at 40% opacity (globalAlpha = 0.4)
 - Applies to all LOD levels (full, medium, simple)
 - Controlled by TreeController.cutPaths set

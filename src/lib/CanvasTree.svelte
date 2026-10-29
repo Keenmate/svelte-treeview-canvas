@@ -127,7 +127,7 @@
 		balancedSplit?: 'even' | 'weighted';
 
 		// Fishbone layout
-		fishboneCrossNav?: boolean;
+		isFishboneCrossNavEnabled?: boolean;
 
 		// Radial layout
 		radialStartAngle?: number;
@@ -136,10 +136,10 @@
 		// Sunburst layout
 		sunburstRingWidth?: number;
 		sunburstRootTitle?: string;
-		groupSiblings?: boolean;
-		showDotGrid?: boolean;
+		shouldGroupSiblings?: boolean;
+		isDotGridShown?: boolean;
 		clickBehavior?: ClickBehavior;
-		collapsible?: boolean;
+		isCollapsingEnabled?: boolean;
 		nodeHeight?: number;
 		nodeMinWidth?: number;
 		nodeMaxWidth?: number;
@@ -216,10 +216,10 @@
 		// Navigation overrides (partial — override individual nav methods)
 		navigationOverrides?: TreeNavigationOverrides<T>;
 		/** Auto-pan viewport to keep selected node visible when focusedPath changes */
-		autoFocusOnSelect?: boolean;
+		shouldFocusOnSelect?: boolean;
 
 		// Clipboard support
-		enableClipboard?: boolean;
+		isClipboardEnabled?: boolean;
 		/** Ctrl+V transform: `(ctx) => data | null` (`ctx.data` = the copied data). */
 		transformDataForPaste?: NodeTransformCallback<T>;
 		onNodePaste?: P['onNodePaste'];
@@ -268,15 +268,15 @@
 		growthDirection = $bindable('right'),
 		initialViewport = 'root',
 		balancedSplit = 'even',
-		fishboneCrossNav = false,
+		isFishboneCrossNavEnabled = false,
 		radialStartAngle = 0,
 		radialSpacing,
 		sunburstRingWidth = 100,
 		sunburstRootTitle,
-		groupSiblings = $bindable(true),
-		showDotGrid = $bindable(false),
+		shouldGroupSiblings = $bindable(true),
+		isDotGridShown = $bindable(false),
 		clickBehavior = $bindable('expand-and-focus'),
-		collapsible = true,
+		isCollapsingEnabled = true,
 		nodeHeight = $bindable<number | undefined>(undefined),
 		nodeMinWidth = $bindable<number | undefined>(undefined),
 		nodeMaxWidth = $bindable<number | undefined>(undefined),
@@ -345,10 +345,10 @@
 
 		// Navigation
 		navigationOverrides,
-		autoFocusOnSelect = false,
+		shouldFocusOnSelect = false,
 
 		// Clipboard
-		enableClipboard = false,
+		isClipboardEnabled = false,
 		transformDataForPaste,
 		onNodePaste,
 		onNodeCopy,
@@ -511,7 +511,7 @@
 		const result = computeLayout(
 			ctrlRef,
 			growthDirection,
-			groupSiblings,
+			shouldGroupSiblings,
 			measureNodeWidthFn,
 			{
 				nodeHeight: eNodeHeight,
@@ -592,7 +592,7 @@
 		ctx.fillStyle = theme.bg;
 		ctx.fillRect(0, 0, cw, ch);
 		let tGrid = t0;
-		if (showDotGrid) {
+		if (isDotGridShown) {
 			drawDotGrid(ctx, cw, ch, iState.panX, iState.panY, iState.zoom, theme);
 			tGrid = performance.now();
 		}
@@ -841,7 +841,7 @@
 				}
 
 				const nodeCollapsible = ctrlRef?.getNodeIsCollapsible(ln.node) ?? true;
-				const shouldToggle = collapsible && nodeCollapsible && ln.node.hasChildren && (
+				const shouldToggle = isCollapsingEnabled && nodeCollapsible && ln.node.hasChildren && (
 					clickBehavior !== 'select' || chevronHit
 				);
 				const wasExpanded = ln.node.isExpanded;
@@ -856,7 +856,7 @@
 					const children = ctrlRef!.getChildren(ln.node.path);
 					if (children.length > 0) {
 						const firstChildLn = layoutNodes.find(n => n.node.path === children[0].path);
-						if (firstChildLn) interaction.focusOnNode(firstChildLn, { select: false });
+						if (firstChildLn) interaction.focusOnNode(firstChildLn, { shouldSelect: false });
 					}
 				}
 				if (ctrlRef) onNodeClickHandler?.(withController(ctrlRef, ctrlRef.getNodeRef(ln.node)));
@@ -865,7 +865,7 @@
 				// Double-click: toggle expand/collapse (useful in 'select' mode where single click only selects)
 				if (!ctrlRef) return;
 				const nodeCollapsible = ctrlRef.getNodeIsCollapsible(ln.node);
-				if (!collapsible || !nodeCollapsible || !ln.node.hasChildren) return;
+				if (!isCollapsingEnabled || !nodeCollapsible || !ln.node.hasChildren) return;
 
 				ctrlRef.toggleNodeExpanded(ln.node.path);
 				recomputeAndDraw();
@@ -875,7 +875,7 @@
 					const children = ctrlRef.getChildren(ln.node.path);
 					if (children.length > 0) {
 						const firstChildLn = layoutNodes.find(n => n.node.path === children[0].path);
-						if (firstChildLn) interaction.focusOnNode(firstChildLn, { select: false });
+						if (firstChildLn) interaction.focusOnNode(firstChildLn, { shouldSelect: false });
 					}
 				}
 			},
@@ -1652,7 +1652,7 @@
 		}
 
 		// Clipboard shortcuts (Ctrl+C/X/V, Escape to cancel cut)
-		if (enableClipboard && ctrlRef && !ctrlRef.contextMenuVisible && !canvasMenuVisible) {
+		if (isClipboardEnabled && ctrlRef && !ctrlRef.contextMenuVisible && !canvasMenuVisible) {
 			if (e.ctrlKey && e.key === 'c') {
 				ctrlRef.copyNodes();
 				e.preventDefault();
@@ -1854,7 +1854,7 @@
 						return da < db ? a : b;
 					});
 					navigateToPath(best.node.path);
-				} else if (fishboneCrossNav) {
+				} else if (isFishboneCrossNavEnabled) {
 					const getSpineAncestor = (ln: LayoutNode<T>): LayoutNode<T> => {
 						let a = ln;
 						while (a.parent && a.depth > 1) a = a.parent;
@@ -1928,7 +1928,7 @@
 	// Auto-pan to selected node when focusedPath changes externally
 	$effect(() => {
 		const path = focusedPath;
-		if (autoFocusOnSelect && path && canvasEl) {
+		if (shouldFocusOnSelect && path && canvasEl) {
 			interaction.ensurePathVisible(path);
 			// Also scroll the page so the canvas container is visible
 			if (containerEl) {
@@ -1963,8 +1963,8 @@
 		if (!ctrlRef || !canvasEl) return;
 		const _tracker = ctrlRef.tree.changeTracker;
 		const _direction = growthDirection;
-		const _grouped = groupSiblings;
-		const _dots = showDotGrid;
+		const _grouped = shouldGroupSiblings;
+		const _dots = isDotGridShown;
 		const _layoutMode = layoutMode;
 		// Track all layout-affecting state (effective values resolve prop → theme)
 		void [eColumnGap, gridNodeMaxW, eNodeHeight, eNodeGap, eLevelSpacingV,
@@ -2138,7 +2138,7 @@
 		recomputeAndDraw();
 		// Camera: single target -> focus on it; array or whole-tree -> fit-to-view.
 		if (typeof paths === 'string' && paths) {
-			interaction.focusOnPath(paths, { zoom: 0.5, select: false });
+			interaction.focusOnPath(paths, { zoom: 0.5, shouldSelect: false });
 		} else {
 			interaction.zoomToFit();
 		}
@@ -2248,7 +2248,7 @@
 		recomputeAndDraw();
 		// Camera: single target -> focus on it; array or whole-tree -> fit-to-view.
 		if (typeof paths === 'string' && paths) {
-			interaction.focusOnPath(paths, { zoom: 'auto', select: false });
+			interaction.focusOnPath(paths, { zoom: 'auto', shouldSelect: false });
 		} else {
 			interaction.zoomToFit();
 		}

@@ -389,7 +389,7 @@
 					nodeGap={8}
 					columnGap={50}
 					fontSize={13}
-					showDotGrid={true}
+					isDotGridShown={true}
 					getNodeLabelCallback={(node) => node.data?.name || node.path}
 					renderBodyCallback={renderBody}
 					getNodeContextMenuItemsCallback={getContextMenu}
@@ -442,7 +442,7 @@
 			</label>
 			<label class="geo-label geo-checkbox">
 				<input type="checkbox" bind:checked={geoShowDots} />
-				<span>showDotGrid</span>
+				<span>isDotGridShown</span>
 			</label>
 		</div>
 
@@ -464,7 +464,7 @@
 				columnGap={geoColumnGap}
 				fontSize={geoFontSize}
 				theme={{ nodeRadius: geoBorderRadius }}
-				showDotGrid={geoShowDots}
+				isDotGridShown={geoShowDots}
 				getNodeLabelCallback={(node) => node.data?.name || node.path}
 				renderBodyCallback={renderBody}
 				getNodeContextMenuItemsCallback={getContextMenu}

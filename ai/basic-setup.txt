@@ -102,13 +102,13 @@ Always-visible overview in corner with viewport indicator. Click/drag minimap to
 
 DOT GRID
 --------
-<CanvasTree showDotGrid={true} ... />
+<CanvasTree isDotGridShown={true} ... />
 
 Optional background grid for visual reference.
 
 GROUP SIBLINGS
 --------------
-<CanvasTree groupSiblings={true} ... />
+<CanvasTree shouldGroupSiblings={true} ... />
 
 Groups sibling nodes into visual boxes (default: true).
 

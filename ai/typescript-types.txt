@@ -147,8 +147,8 @@ interface FocusOptions {
   anchor?: FocusAnchor;
   zoom?: FocusZoom;
   padding?: number;
-  animate?: boolean;
-  select?: boolean;
+  shouldAnimate?: boolean;   // default true
+  shouldSelect?: boolean;    // default true (updates focusedPath)
 }
 
 LAYOUT NODE
