@@ -1,10 +1,36 @@
 import type { LTreeNode } from '@keenmate/svelte-treeview';
-import type { DropPosition, ClickBehavior, ContextMenuItem, ContextMenuDivider, ContextMenuEntry } from '@keenmate/svelte-treeview';
+import type { DropPosition, ClickBehavior, NodeRef, TreeCallbackContext, TreeMenuContext, TreeMenuItem, TreeMenuEntry } from '@keenmate/svelte-treeview';
 import type { TreeController, TreeControllerProps } from '@keenmate/svelte-treeview';
 import type { CanvasTheme } from './canvas-theme.js';
 
 // Re-export for convenience
-export type { LTreeNode, DropPosition, ClickBehavior, ContextMenuItem, ContextMenuDivider, ContextMenuEntry, TreeController, TreeControllerProps };
+export type { LTreeNode, DropPosition, ClickBehavior, TreeMenuContext, TreeMenuItem, TreeMenuEntry, TreeController, TreeControllerProps };
+
+// ── Event / menu contexts ────────────────────────────────────────────────
+
+/** ctx of `onNodeDrop` — a node dragged on the canvas and moved (`source` = the node at its
+ *  new place). One ctx object + `controller`, like svelte-treeview's callbacks. */
+export interface CanvasNodeDropContext<T> extends TreeCallbackContext<T> {
+	source: NodeRef<T>;
+	target: NodeRef<T>;
+	position: DropPosition;
+}
+
+/** ctx of `getGroupContextMenuItemsCallback` — the group box's parent node (a `TreeMenuContext`,
+ *  so built-in actions act on it) + the grouped `childNodes`. */
+export interface CanvasGroupMenuContext<T> extends TreeMenuContext<T> {
+	childNodes: LTreeNode<T>[];
+}
+
+/** ctx of `getCanvasContextMenuItemsCallback` (right-click on empty canvas) — just the
+ *  controller; no node, so built-in action names don't apply there. */
+export type CanvasMenuContext<T> = TreeCallbackContext<T>;
+
+/** Options of `scrollToPath` — the canvas subset of svelte-treeview's `ScrollToPathOptions`. */
+export interface CanvasScrollToPathOptions {
+	/** Expand the node's collapsed ancestors first so it is laid out. Default `true`. */
+	shouldExpandAncestors?: boolean;
+}
 
 // ── LOD ──────────────────────────────────────────────────────────────────
 
@@ -222,7 +248,7 @@ export interface FocusOptions {
 	padding?: number;
 	/** Whether to animate the transition. Default: true */
 	animate?: boolean;
-	/** Whether to update selectedPath. Default: true */
+	/** Whether to update focusedPath. Default: true */
 	select?: boolean;
 }
 

@@ -750,7 +750,7 @@ export function drawMinimap<T>(
 	layoutWidth: number,
 	layoutHeight: number,
 	getDepthColor: (depth: number) => string,
-	selectedPath: string | null,
+	focusedPath: string | null,
 	panX: number,
 	panY: number,
 	zoom: number,
@@ -806,7 +806,7 @@ export function drawMinimap<T>(
 		const nw = Math.max(1.5, n.w * mmScale);
 		const nh = Math.max(1, n.h * mmScale);
 		const color = getDepthColor(n.depth);
-		const isNodeSelected = n.node.path === selectedPath || (selectedPaths?.has(n.node.path) ?? false);
+		const isNodeSelected = n.node.path === focusedPath || (selectedPaths?.has(n.node.path) ?? false);
 		ctx.fillStyle = isNodeSelected ? theme.minimapViewport : color + '80';
 		ctx.fillRect(nx, ny, nw, nh);
 	}

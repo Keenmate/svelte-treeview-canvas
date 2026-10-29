@@ -33,8 +33,8 @@
 		{ id: 17, path: '3.2', parentPath: '3', name: 'Mobile App', icon: '📱', hasChildren: false }
 	];
 
-	function sortByName(items: LTreeNode<Item>[]) {
-		return [...items].sort((a, b) => (a.data?.name || '').localeCompare(b.data?.name || ''));
+	function sortByName({ nodes }: { nodes: LTreeNode<Item>[] }) {
+		return [...nodes].sort((a, b) => (a.data?.name || '').localeCompare(b.data?.name || ''));
 	}
 
 	// ── Tree A: array variants demo ─────────────────────────────────
@@ -45,9 +45,11 @@
 	let treeBRef = $state<CanvasTree<Item> | null>(null);
 	let ctrlBRef = $state<TreeController<Item> | null>(null);
 
-	// ── Tree C/D: isSelectedMember demo ─────────────────────────────
-	let selectedPathsNoSeed = $state(new Set<string>());
-	let selectedPathsSeeded = $state(new Set<string>());
+	// ── Tree C/D: isCheckedMember demo ──────────────────────────────
+	let ctrlNoSeed = $state<TreeController<Item> | null>(null);
+	let ctrlSeeded = $state<TreeController<Item> | null>(null);
+	const checkedNoSeed = $derived([...(ctrlNoSeed?.checkedPaths ?? [])]);
+	const checkedSeeded = $derived([...(ctrlSeeded?.checkedPaths ?? [])]);
 
 	// Visible/expanded paths for live readouts
 	let expandedA = $state<string[]>([]);
@@ -87,9 +89,9 @@
 	function collapseEverything() { treeARef?.collapseAll(); refreshA(); }
 
 	// ── Exclusive actions (Tree B) ──────────────────────────────────
-	function focusDeep() { treeBRef?.expandNodes('1.1.1', { exclusive: true }); refreshB(); }
-	function focusMultiple() { treeBRef?.expandNodes(['1.1', '3.1'], { exclusive: true }); refreshB(); }
-	function focusAllUnder() { treeBRef?.expandAll('2', { exclusive: true }); refreshB(); }
+	function focusDeep() { treeBRef?.expandNodes('1.1.1', { isExclusive: true }); refreshB(); }
+	function focusMultiple() { treeBRef?.expandNodes(['1.1', '3.1'], { isExclusive: true }); refreshB(); }
+	function focusAllUnder() { treeBRef?.expandAll('2', { isExclusive: true }); refreshB(); }
 	function plainExpandAll() { treeBRef?.expandAll(); refreshB(); }
 	function plainCollapseAll() { treeBRef?.collapseAll(); refreshB(); }
 </script>
@@ -102,7 +104,7 @@
 	<header class="example-header">
 		<a href="/" class="back-link">&larr; Back to Examples</a>
 		<h1>🌳 Expand / Collapse</h1>
-		<p class="subtitle">Array variants, exclusive focus mode, and <code>isSelectedMember</code> seeding</p>
+		<p class="subtitle">Array variants, exclusive focus mode, and <code>isCheckedMember</code> seeding</p>
 	</header>
 
 	<!-- ─────────────────────────── Array variants ─────────────────────────── -->
@@ -127,7 +129,7 @@
 				<CanvasTree
 					bind:this={treeARef}
 					bind:controller={ctrlARef}
-					data={sampleData}
+					nodes={sampleData}
 					idMember="id"
 					pathMember="path"
 					parentPathMember="parentPath"
@@ -158,15 +160,15 @@
 	<div class="card">
 		<h2>Exclusive focus mode</h2>
 		<p class="description">
-			Pass <code>{'{ exclusive: true }'}</code> to <code>expandNodes</code> or <code>expandAll</code> to open the target
+			Pass <code>{'{ isExclusive: true }'}</code> to <code>expandNodes</code> or <code>expandAll</code> to open the target
 			path(s) and collapse everything else currently expanded in a single pass. Equivalent to
 			<code>collapseAll() + expandNodes(path)</code> but without the intermediate fully-collapsed frame.
 		</p>
 
 		<div class="controls">
-			<button class="btn" onclick={focusDeep}>expandNodes('1.1.1', {'{ exclusive: true }'})</button>
-			<button class="btn" onclick={focusMultiple}>expandNodes(['1.1', '3.1'], {'{ exclusive: true }'})</button>
-			<button class="btn" onclick={focusAllUnder}>expandAll('2', {'{ exclusive: true }'})</button>
+			<button class="btn" onclick={focusDeep}>expandNodes('1.1.1', {'{ isExclusive: true }'})</button>
+			<button class="btn" onclick={focusMultiple}>expandNodes(['1.1', '3.1'], {'{ isExclusive: true }'})</button>
+			<button class="btn" onclick={focusAllUnder}>expandAll('2', {'{ isExclusive: true }'})</button>
 			<button class="btn btn-secondary" onclick={plainExpandAll}>expandAll()</button>
 			<button class="btn btn-secondary" onclick={plainCollapseAll}>collapseAll()</button>
 		</div>
@@ -176,7 +178,7 @@
 				<CanvasTree
 					bind:this={treeBRef}
 					bind:controller={ctrlBRef}
-					data={sampleData}
+					nodes={sampleData}
 					idMember="id"
 					pathMember="path"
 					parentPathMember="parentPath"
@@ -195,8 +197,8 @@
 				<div class="note">
 					<p class="note-title">Sunburst layout note</p>
 					<p>
-						In <code>layoutMode="sunburst"</code>, the canvas approximates <code>exclusive</code> by collapsing
-						everything first with <code>{'{ noEmit: true }'}</code> and then running the overflow-aware sunburst
+						In <code>layoutMode="sunburst"</code>, the canvas approximates <code>isExclusive</code> by collapsing
+						everything first with <code>{'{ isSilent: true }'}</code> and then running the overflow-aware sunburst
 						expand pass. Other layouts forward the option to the core for true single-pass behavior.
 					</p>
 				</div>
@@ -204,21 +206,22 @@
 		</div>
 	</div>
 
-	<!-- ───────────────────── isSelectedMember seeding ─────────────────────── -->
+	<!-- ───────────────────── isCheckedMember seeding ─────────────────────── -->
 	<div class="card">
-		<h2><code>isSelectedMember</code> &mdash; pre-selected nodes from data</h2>
+		<h2><code>isCheckedMember</code> &mdash; pre-checked nodes from data</h2>
 		<p class="description">
-			Setting <code>isSelectedMember="isPreSelected"</code> tells the controller to walk the tree after
-			<code>insertArray</code> and seed the bindable <code>selectedPaths</code> Set with every path where the field is
-			truthy. Without it, <code>selectedPaths</code> starts empty even if your data has the field.
+			Setting <code>isCheckedMember="isPreSelected"</code> tells the controller to walk the tree after
+			<code>insertArray</code> and seed its checked set (<code>controller.checkedPaths</code>) with every path where
+			the field is truthy. Without it, <code>checkedPaths</code> starts empty even if your data has the field.
+			(The checked set is separate from the click selection, <code>selectedPaths</code>.)
 		</p>
 
 		<div class="grid-2">
 			<div>
-				<div class="output-label" style="margin-bottom: 0.5rem;">Without <code>isSelectedMember</code></div>
+				<div class="output-label" style="margin-bottom: 0.5rem;">Without <code>isCheckedMember</code></div>
 				<div class="canvas-container">
 					<CanvasTree
-						data={sampleData}
+						nodes={sampleData}
 						idMember="id"
 						pathMember="path"
 						parentPathMember="parentPath"
@@ -226,35 +229,35 @@
 						sortCallback={sortByName}
 						isSorted={true}
 						expandLevel={2}
-						bind:selectedPaths={selectedPathsNoSeed}
+						bind:controller={ctrlNoSeed}
 						getNodeLabelCallback={(node) => `${node.data?.icon || ''} ${node.data?.name || node.path}${node.data?.isPreSelected ? ' ⭐' : ''}`}
 					/>
 				</div>
 				<div class="output">
-					<p class="output-label">selectedPaths ({selectedPathsNoSeed.size})</p>
-					<pre>{selectedPathsNoSeed.size === 0 ? '(empty)' : [...selectedPathsNoSeed].join(', ')}</pre>
+					<p class="output-label">controller.checkedPaths ({checkedNoSeed.length})</p>
+					<pre>{checkedNoSeed.length === 0 ? '(empty)' : checkedNoSeed.join(', ')}</pre>
 				</div>
 			</div>
 			<div>
-				<div class="output-label" style="margin-bottom: 0.5rem;">With <code>isSelectedMember="isPreSelected"</code></div>
+				<div class="output-label" style="margin-bottom: 0.5rem;">With <code>isCheckedMember="isPreSelected"</code></div>
 				<div class="canvas-container">
 					<CanvasTree
-						data={sampleData}
+						nodes={sampleData}
 						idMember="id"
 						pathMember="path"
 						parentPathMember="parentPath"
 						hasChildrenMember="hasChildren"
-						isSelectedMember="isPreSelected"
+						isCheckedMember="isPreSelected"
 						sortCallback={sortByName}
 						isSorted={true}
 						expandLevel={2}
-						bind:selectedPaths={selectedPathsSeeded}
+						bind:controller={ctrlSeeded}
 						getNodeLabelCallback={(node) => `${node.data?.icon || ''} ${node.data?.name || node.path}${node.data?.isPreSelected ? ' ⭐' : ''}`}
 					/>
 				</div>
 				<div class="output">
-					<p class="output-label">selectedPaths ({selectedPathsSeeded.size})</p>
-					<pre>{selectedPathsSeeded.size === 0 ? '(empty)' : [...selectedPathsSeeded].join(', ')}</pre>
+					<p class="output-label">controller.checkedPaths ({checkedSeeded.length})</p>
+					<pre>{checkedSeeded.length === 0 ? '(empty)' : checkedSeeded.join(', ')}</pre>
 				</div>
 			</div>
 		</div>
@@ -263,8 +266,8 @@
 			<p class="note-title">Where it's useful</p>
 			<p>
 				Server-rendered data that already knows which rows are checked (saved filters, persisted user selections).
-				The selection round-trips without a client-side re-walk. The matching <code>isSelectableMember</code> prop
-				gates whether a node can be (de)selected at all.
+				The selection round-trips without a client-side re-walk. The <code>isSelectableMember</code> prop
+				gates whether a node can be selected at all.
 			</p>
 		</div>
 	</div>
@@ -281,16 +284,21 @@ canvasTree.expandNodes(['1.2.3', '2.1', '3.1.1']);
 canvasTree.collapseNodes(['1.2.3', '2.1', '3.1.1']);
 
 // Exclusive focus — collapse others, expand target spine, single pass
-canvasTree.expandNodes('1.2.3', {'{ exclusive: true }'});
-canvasTree.expandAll('1', {'{ exclusive: true }'});
+canvasTree.expandNodes('1.2.3', {'{ isExclusive: true }'});
+canvasTree.expandAll('1', {'{ isExclusive: true }'});
 
-// noEmit — batch multiple ops, emit once at the end
-canvasTree.expandNodes(['1', '2'], {'{ noEmit: true }'});
-canvasTree.collapseNodes('3', {'{ noEmit: true }'});
-controller.tree.refresh();
+// isSilent — no onNodeExpand / onExpandedChange (the canvas still re-renders)
+canvasTree.expandNodes(['1', '2'], {'{ isSilent: true }'});
+canvasTree.collapseNodes('3', {'{ isSilent: true }'});
 
-// Initial selection from data
-&lt;CanvasTree {'{data}'} isSelectedMember="isPreSelected" /&gt;</pre>
+// One node, through beforeExpandCallback when expanding
+canvasTree.toggleNodeExpanded('1.2');
+
+// The expanded set as a bindable
+&lt;CanvasTree {'{nodes}'} bind:expandedPaths /&gt;
+
+// Initial checked state from data
+&lt;CanvasTree {'{nodes}'} isCheckedMember="isPreSelected" /&gt;</pre>
 	</div>
 
 	<footer>

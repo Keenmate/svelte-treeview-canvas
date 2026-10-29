@@ -29,8 +29,8 @@ test('right-clicking a node opens its context menu with the expected items', asy
 	await expect(menuItem(page, 'Duplicate')).toBeVisible();
 	await expect(menuItem(page, 'Delete')).toBeVisible();
 	// Named divider between the safe items and the danger zone.
-	await expect(page.locator('.canvas-tree-ctx-menu-divider-label')).toHaveText('Danger zone');
-	// Delete carries the consumer's className.
+	await expect(page.locator('.canvas-tree-ctx-menu-divider-label')).toHaveText(['Danger zone', 'Built-in']);
+	// Delete is isDanger: true.
 	await expect(page.locator('.canvas-tree-ctx-menu-item.danger')).toContainText('Delete');
 });
 
@@ -63,4 +63,17 @@ test('right-clicking empty canvas opens the canvas-level menu', async ({ page })
 
 	await menuItem(page, 'Collapse All').click();
 	await expect(lastAction(page)).toHaveText('canvas:collapse-all');
+});
+
+test('a built-in action name renders with its label text and runs (onAction after)', async ({ page }) => {
+	const visible = page.getByTestId('visible-count');
+	await expect(visible).toHaveText('4');
+
+	await rightClickNode(page, '1'); // Documents (expanded, 2 children)
+	await expect(page.locator('.canvas-tree-ctx-menu-item[data-action="collapse-subtree"]')).toHaveText(/Collapse subtree/);
+	await menuItem(page, 'Collapse subtree').click();
+
+	await expect(lastAction(page)).toHaveText('action:collapse-subtree:1');
+	await expect(menu(page)).toHaveCount(0);
+	await expect(visible).toHaveText('2'); // Documents + Downloads
 });

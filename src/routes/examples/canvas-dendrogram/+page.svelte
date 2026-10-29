@@ -1,8 +1,9 @@
 <script lang="ts">
+	import type { CanvasGroupMenuContext, CanvasMenuContext, CanvasNodeDropContext } from '$lib/types.js';
 	import { CanvasTree } from '$lib/index.js';
 	import { TreeController } from '@keenmate/svelte-treeview';
 	import type { LTreeNode } from '@keenmate/svelte-treeview';
-	import type { ContextMenuEntry, DropPosition, NodeTransformContext } from '@keenmate/svelte-treeview';
+	import type { TreeMenuEntry, TreeMenuContext, MenuEntry, NodeTransformCallbackContext } from '@keenmate/svelte-treeview';
 	import type { GrowthDirection, ClickBehavior, CanvasLevelConfig, InitialViewport } from '$lib/types.js';
 
 	// ── Types ──────────────────────────────────────────────────────────────
@@ -141,7 +142,7 @@
 			: undefined
 	);
 
-	let selectedPath = $state<string | null>(null);
+	let focusedPath = $state<string | null>(null);
 	let selectedPaths = $state<Set<string>>(new Set());
 	let rangeSelectionMode: 'visual' | 'logical' = $state(saved.rangeSelectionMode ?? 'visual');
 	let ctrlRef = $state<TreeController<TreeItem> | null>(null);
@@ -158,14 +159,15 @@
 	// Clipboard
 	let enableClipboard = $state(true);
 	let nextPasteId = $state(10000);
-	function transformDataForPaste(data: TreeItem, ctx: NodeTransformContext<TreeItem>): TreeItem | null {
+	function transformDataForPaste({ data, operation }: NodeTransformCallbackContext<TreeItem>): TreeItem | null {
 		return {
 			...data,
 			id: nextPasteId++,
-			name: ctx.operation === 'copy' ? `${data.name} (copy)` : data.name
+			name: operation === 'copy' ? `${data.name} (copy)` : data.name
 		};
 	}
-	function onPaste(result: { success: boolean; count: number; error?: string }) {
+	/** onNodePaste — fired by the tree for every paste (Ctrl+V, menu items, built-in 'paste'). */
+	function handlePaste(result: { success: boolean; count: number; error?: string }) {
 		if (result.success) {
 			dropLog = [`Pasted ${result.count} node(s)`, ...dropLog.slice(0, 9)];
 		} else {
@@ -198,12 +200,13 @@
 
 	// ── Callbacks ─────────────────────────────────────────────────────────
 
-	function sortCallback(items: LTreeNode<TreeItem>[]) {
-		return [...items].sort((a, b) => (a.data?.name || '').localeCompare(b.data?.name || ''));
+	function sortCallback({ nodes }: { nodes: LTreeNode<TreeItem>[] }) {
+		return [...nodes].sort((a, b) => (a.data?.name || '').localeCompare(b.data?.name || ''));
 	}
 
-	function getCanvasContextMenu(node: LTreeNode<TreeItem>, selectedNodes?: LTreeNode<TreeItem>[]): ContextMenuEntry[] {
-		const items: ContextMenuEntry[] = [];
+	function getCanvasContextMenu({ node, controller }: TreeMenuContext<TreeItem>): TreeMenuEntry<TreeItem>[] {
+		const selectedNodes = controller.getSelectedNodes();
+		const items: TreeMenuEntry<TreeItem>[] = [];
 		const selCount = selectedNodes?.length ?? 0;
 		const isMulti = selCount > 1;
 
@@ -212,25 +215,24 @@
 			if (enableClipboard) {
 				items.push({
 					icon: '\u{1F4CB}',
-					label: `Copy ${selCount} nodes`,
+					text: `Copy ${selCount} nodes`,
 					shortcut: 'Ctrl+C',
-					onclick: () => ctrlRef?.copyNodes()
+					onClick: () => ctrlRef?.copyNodes()
 				});
 				items.push({
 					icon: '\u{2702}',
-					label: `Cut ${selCount} nodes`,
+					text: `Cut ${selCount} nodes`,
 					shortcut: 'Ctrl+X',
-					onclick: () => ctrlRef?.cutNodes()
+					onClick: () => ctrlRef?.cutNodes()
 				});
 				if (ctrlRef?.hasClipboardContent()) {
 					items.push({
 						icon: '\u{1F4CC}',
-						label: 'Paste as child',
+						text: 'Paste as child',
 						shortcut: 'Ctrl+V',
-						onclick: () => {
-							if (ctrlRef && selectedPath) {
-								const result = ctrlRef.pasteNodes(selectedPath, transformDataForPaste, 'child');
-								onPaste(result);
+						onClick: () => {
+							if (ctrlRef && focusedPath) {
+								ctrlRef.pasteNodes(focusedPath, transformDataForPaste, 'child');
 							}
 						}
 					});
@@ -239,8 +241,8 @@
 			}
 			items.push({
 				icon: '\u{1F4E6}',
-				label: `Export ${selCount} nodes as CSV`,
-				onclick: () => {
+				text: `Export ${selCount} nodes as CSV`,
+				onClick: () => {
 					const header = 'id,path,name,level,hasChildren';
 					const rows = (selectedNodes ?? []).map(n =>
 						`${n.data?.id ?? ''},${n.path},"${n.data?.name ?? ''}",${n.level},${n.data?.hasChildren ?? false}`
@@ -257,8 +259,8 @@
 			});
 			items.push({
 				icon: '\u{1F4CB}',
-				label: `Copy ${selCount} paths`,
-				onclick: () => {
+				text: `Copy ${selCount} paths`,
+				onClick: () => {
 					const paths = (selectedNodes ?? []).map(n => n.path).join('\n');
 					navigator.clipboard.writeText(paths);
 				}
@@ -266,8 +268,8 @@
 			items.push({ divider: true });
 			items.push({
 				icon: '\u{274C}',
-				label: 'Clear selection',
-				onclick: () => {
+				text: 'Clear selection',
+				onClick: () => {
 					ctrlRef?.clearSelection();
 					selectedPaths = new Set();
 				}
@@ -278,8 +280,8 @@
 		// ── Single-node context menu ─────────────────────────────────
 		items.push({
 			icon: '\u{1F3AF}',
-			label: 'Focus on node',
-			onclick: () => {
+			text: 'Focus on node',
+			onClick: () => {
 				canvasTreeRef?.focusOnPath(node.path);
 			}
 		});
@@ -289,58 +291,57 @@
 			if (node.isExpanded) {
 				items.push({
 					icon: '\u{1F4C1}',
-					label: 'Collapse',
-					onclick: () => { ctrlRef?.collapseNodes(node.path); }
+					text: 'Collapse',
+					onClick: () => { ctrlRef?.collapseNodes(node.path); }
 				});
 			} else {
 				items.push({
 					icon: '\u{1F4C2}',
-					label: 'Expand',
-					onclick: () => { ctrlRef?.expandNodes(node.path); }
+					text: 'Expand',
+					onClick: () => { ctrlRef?.expandNodes(node.path); }
 				});
 			}
 			items.push({
 				icon: '\u{1F4C2}',
-				label: 'Expand subtree',
-				onclick: () => { canvasTreeRef?.expandAll(node.path); }
+				text: 'Expand subtree',
+				onClick: () => { canvasTreeRef?.expandAll(node.path); }
 			});
 			items.push({
 				icon: '\u{1F4C1}',
-				label: 'Collapse subtree',
-				onclick: () => { canvasTreeRef?.collapseAll(node.path); }
+				text: 'Collapse subtree',
+				onClick: () => { canvasTreeRef?.collapseAll(node.path); }
 			});
 		}
 
 		items.push({ divider: true });
 		items.push({
 			icon: '\u{1F4CB}',
-			label: 'Copy path',
-			onclick: () => navigator.clipboard.writeText(node.path)
+			text: 'Copy path',
+			onClick: () => navigator.clipboard.writeText(node.path)
 		});
 
 		if (enableClipboard) {
-			items.push({ divider: true, label: 'Clipboard' });
+			items.push({ divider: true, text: 'Clipboard' });
 			items.push({
 				icon: '\u{1F4CB}',
-				label: 'Copy',
+				text: 'Copy',
 				shortcut: 'Ctrl+C',
-				onclick: () => ctrlRef?.copyNodes([node.path])
+				onClick: () => ctrlRef?.copyNodes([node.path])
 			});
 			items.push({
 				icon: '\u{2702}',
-				label: 'Cut',
+				text: 'Cut',
 				shortcut: 'Ctrl+X',
-				onclick: () => ctrlRef?.cutNodes([node.path])
+				onClick: () => ctrlRef?.cutNodes([node.path])
 			});
 			items.push({
 				icon: '\u{1F4CC}',
-				label: 'Paste as child',
+				text: 'Paste as child',
 				shortcut: 'Ctrl+V',
 				isDisabled: !ctrlRef?.hasClipboardContent(),
-				onclick: () => {
+				onClick: () => {
 					if (ctrlRef) {
-						const result = ctrlRef.pasteNodes(node.path, transformDataForPaste, 'child');
-						onPaste(result);
+						ctrlRef.pasteNodes(node.path, transformDataForPaste, 'child');
 					}
 				}
 			});
@@ -349,36 +350,36 @@
 		return items;
 	}
 
-	function getGroupContextMenu(parentNode: LTreeNode<TreeItem>, childNodes: LTreeNode<TreeItem>[]): ContextMenuEntry[] {
-		const items: ContextMenuEntry[] = [];
+	function getGroupContextMenu({ node: parentNode, childNodes }: CanvasGroupMenuContext<TreeItem>): TreeMenuEntry<TreeItem>[] {
+		const items: TreeMenuEntry<TreeItem>[] = [];
 
 		items.push({
 			icon: '\u{1F4C2}',
-			label: `Expand "${parentNode.data?.name}"`,
+			text: `Expand "${parentNode.data?.name}"`,
 			isDisabled: parentNode.isExpanded,
-			onclick: () => ctrlRef?.expandNodes(parentNode.path)
+			onClick: () => ctrlRef?.expandNodes(parentNode.path)
 		});
 		items.push({
 			icon: '\u{1F4C1}',
-			label: `Collapse "${parentNode.data?.name}"`,
+			text: `Collapse "${parentNode.data?.name}"`,
 			isDisabled: !parentNode.isExpanded,
-			onclick: () => ctrlRef?.collapseNodes(parentNode.path)
+			onClick: () => ctrlRef?.collapseNodes(parentNode.path)
 		});
 
-		items.push({ divider: true, label: `${childNodes.length} children` });
+		items.push({ divider: true, text: `${childNodes.length} children` });
 
 		items.push({
 			icon: '\u{2705}',
-			label: `Select all ${childNodes.length} children`,
-			onclick: () => {
-				ctrlRef?.highlightNodes(childNodes.map(n => n.path));
+			text: `Select all ${childNodes.length} children`,
+			onClick: () => {
+				ctrlRef?.selectNodes(childNodes.map(n => n.path));
 				selectedPaths = ctrlRef?.selectedPaths ?? new Set();
 			}
 		});
 		items.push({
 			icon: '\u{1F4E6}',
-			label: `Export group as CSV`,
-			onclick: () => {
+			text: `Export group as CSV`,
+			onClick: () => {
 				const header = 'id,path,name,level,hasChildren';
 				const rows = childNodes.map(n =>
 					`${n.data?.id ?? ''},${n.path},"${n.data?.name ?? ''}",${n.level},${n.data?.hasChildren ?? false}`
@@ -395,20 +396,19 @@
 		});
 		items.push({
 			icon: '\u{1F3AF}',
-			label: 'Focus on parent',
-			onclick: () => canvasTreeRef?.focusOnPath(parentNode.path)
+			text: 'Focus on parent',
+			onClick: () => canvasTreeRef?.focusOnPath(parentNode.path)
 		});
 
 		if (enableClipboard && ctrlRef?.hasClipboardContent()) {
-			items.push({ divider: true, label: 'Clipboard' });
+			items.push({ divider: true, text: 'Clipboard' });
 			items.push({
 				icon: '\u{1F4CC}',
-				label: `Paste into "${parentNode.data?.name}"`,
+				text: `Paste into "${parentNode.data?.name}"`,
 				shortcut: 'Ctrl+V',
-				onclick: () => {
+				onClick: () => {
 					if (ctrlRef) {
-						const result = ctrlRef.pasteNodes(parentNode.path, transformDataForPaste, 'child');
-						onPaste(result);
+						ctrlRef.pasteNodes(parentNode.path, transformDataForPaste, 'child');
 					}
 				}
 			});
@@ -417,43 +417,43 @@
 		return items;
 	}
 
-	function getCanvasEmptyContextMenu(): ContextMenuEntry[] {
-		const items: ContextMenuEntry[] = [];
+	function getCanvasEmptyContextMenu(): MenuEntry<CanvasMenuContext<TreeItem>>[] {
+		const items: MenuEntry<CanvasMenuContext<TreeItem>>[] = [];
 
 		items.push({
 			icon: '\u{1F50D}',
-			label: 'Zoom to Fit',
+			text: 'Zoom to Fit',
 			shortcut: 'F',
-			onclick: () => canvasTreeRef?.zoomToFit()
+			onClick: () => canvasTreeRef?.zoomToFit()
 		});
 
-		items.push({ divider: true, label: 'Tree' });
+		items.push({ divider: true, text: 'Tree' });
 
 		items.push({
 			icon: '\u{1F4C2}',
-			label: 'Expand All',
-			onclick: () => canvasTreeRef?.expandAll()
+			text: 'Expand All',
+			onClick: () => canvasTreeRef?.expandAll()
 		});
 		items.push({
 			icon: '\u{1F4C1}',
-			label: 'Collapse All',
-			onclick: () => canvasTreeRef?.collapseAll()
+			text: 'Collapse All',
+			onClick: () => canvasTreeRef?.collapseAll()
 		});
 
-		items.push({ divider: true, label: 'Data' });
+		items.push({ divider: true, text: 'Data' });
 
 		items.push({
 			icon: '\u{1F504}',
-			label: 'Regenerate tree',
-			onclick: () => generateAndReset()
+			text: 'Regenerate tree',
+			onClick: () => generateAndReset()
 		});
 
 		if (selectedPaths.size > 0) {
-			items.push({ divider: true, label: `Selection (${selectedPaths.size})` });
+			items.push({ divider: true, text: `Selection (${selectedPaths.size})` });
 			items.push({
 				icon: '\u{1F4E6}',
-				label: `Export ${selectedPaths.size} nodes as CSV`,
-				onclick: () => {
+				text: `Export ${selectedPaths.size} nodes as CSV`,
+				onClick: () => {
 					const nodes = ctrlRef?.getSelectedNodes() ?? [];
 					const header = 'id,path,name,level,hasChildren';
 					const rows = nodes.map(n =>
@@ -471,8 +471,8 @@
 			});
 			items.push({
 				icon: '\u{274C}',
-				label: 'Clear selection',
-				onclick: () => {
+				text: 'Clear selection',
+				onClick: () => {
 					ctrlRef?.clearSelection();
 					selectedPaths = new Set();
 				}
@@ -482,8 +482,8 @@
 		return items;
 	}
 
-	function onNodeDrop(source: LTreeNode<TreeItem>, target: LTreeNode<TreeItem>, position: DropPosition) {
-		dropLog = [`Moved "${source.data?.name}" ${position} "${target.data?.name}"`, ...dropLog.slice(0, 9)];
+	function onNodeDrop({ source, target, position }: CanvasNodeDropContext<TreeItem>) {
+		dropLog = [`Moved "${source.node?.data?.name}" ${position} "${target.node?.data?.name}"`, ...dropLog.slice(0, 9)];
 	}
 
 	// ── Actions ───────────────────────────────────────────────────────────
@@ -491,7 +491,7 @@
 	function generateAndReset() {
 		treeData = generateTreeData(nodeCountTarget);
 		treeKey++;
-		selectedPath = null;
+		focusedPath = null;
 		selectedPaths = new Set();
 		dropLog = [];
 		searchQuery = '';
@@ -822,7 +822,7 @@
 			<div class="canvas-container">
 				<CanvasTree
 					bind:this={canvasTreeRef}
-					data={treeData}
+					nodes={treeData}
 					idMember="id"
 					pathMember="path"
 					parentPathMember="parentPath"
@@ -834,7 +834,7 @@
 					dragDropMode="self"
 					shouldUseInternalSearchIndex={true}
 					searchValueMember="name"
-					bind:selectedPath
+					bind:focusedPath
 					bind:selectedPaths
 					{rangeSelectionMode}
 					bind:controller={ctrlRef}
@@ -871,7 +871,7 @@
 					{onNodeDrop}
 					{enableClipboard}
 					{transformDataForPaste}
-					{onPaste}
+					onNodePaste={handlePaste}
 				/>
 			</div>
 		{/key}
@@ -883,14 +883,14 @@
 					<p><strong>{selectedPaths.size} nodes selected</strong> <span class="info-meta">({rangeSelectionMode} mode)</span></p>
 					<button class="btn secondary" style="margin-top: 0.4rem; font-size: 0.8rem; padding: 0.25rem 0.6rem;" onclick={() => { ctrlRef?.clearSelection(); selectedPaths = new Set(); }}>Clear Selection</button>
 				</div>
-			{:else if selectedPath && ctrlRef}
-				{@const selNode = ctrlRef.getNodeByPath(selectedPath)}
+			{:else if focusedPath && ctrlRef}
+				{@const selNode = ctrlRef.getNodeByPath(focusedPath)}
 				{#if selNode}
 					<div class="info-panel">
 						<h3>Selected Node</h3>
 						<p><strong>{selNode.data?.name}</strong></p>
 						<p class="info-meta">Path: {selNode.path} | Level: {selNode.level} | Children: {selNode.hasChildren ? 'yes' : 'no'}</p>
-						<button class="btn secondary" style="margin-top: 0.4rem; font-size: 0.8rem; padding: 0.25rem 0.6rem;" onclick={() => canvasTreeRef?.focusOnPath(selectedPath!)}>Focus</button>
+						<button class="btn secondary" style="margin-top: 0.4rem; font-size: 0.8rem; padding: 0.25rem 0.6rem;" onclick={() => canvasTreeRef?.focusOnPath(focusedPath!)}>Focus</button>
 					</div>
 				{/if}
 			{/if}

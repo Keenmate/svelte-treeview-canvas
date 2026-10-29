@@ -1,7 +1,8 @@
 <script lang="ts">
+	import type { CanvasGroupMenuContext, CanvasMenuContext } from '$lib/types.js';
 	import { CanvasTree } from '$lib/index.js';
 	import { TreeController, getClipboard, clearClipboard } from '@keenmate/svelte-treeview';
-	import type { LTreeNode, ContextMenuEntry, ClipboardEntry, PasteResult } from '@keenmate/svelte-treeview';
+	import type { LTreeNode, TreeMenuEntry, TreeMenuContext, MenuEntry, ClipboardEntry, PasteResult } from '@keenmate/svelte-treeview';
 	import type { GrowthDirection, ClickBehavior } from '$lib/types.js';
 
 	// ── Types ──────────────────────────────────────────────────────────────
@@ -69,7 +70,7 @@
 	let treeKey = $state(0);
 	let nextId = 200;
 
-	let selectedPath = $state<string | null>(null);
+	let focusedPath = $state<string | null>(null);
 	let selectedPaths = $state<Set<string>>(new Set());
 	let ctrlRef = $state<TreeController<OrgNode> | null>(null);
 	let canvasTreeRef: ReturnType<typeof CanvasTree> | undefined = $state();
@@ -96,15 +97,15 @@
 		activityLog = [`${new Date().toLocaleTimeString()} - ${message}`, ...activityLog.slice(0, 19)];
 	}
 
-	function sortCallback(items: LTreeNode<OrgNode>[]) {
-		return [...items].sort((a, b) => (a.data?.name || '').localeCompare(b.data?.name || ''));
+	function sortCallback({ nodes }: { nodes: LTreeNode<OrgNode>[] }) {
+		return [...nodes].sort((a, b) => (a.data?.name || '').localeCompare(b.data?.name || ''));
 	}
 
 	function resetTree() {
 		nextId = 200;
 		treeData = createInitialData();
 		treeKey++;
-		selectedPath = null;
+		focusedPath = null;
 		selectedPaths = new Set();
 		isProcessing = false;
 		activityLog = [];
@@ -206,7 +207,7 @@
 			// 2. If cut, delete old branches
 			if (operation === 'cut') {
 				for (const entry of pasteResult.entries) {
-					const deleteResult = ctrlRef.deleteBranch(entry.sourcePath);
+					const deleteResult = ctrlRef.removeBranch(entry.sourcePath);
 					if (!deleteResult.success) {
 						addLog(`Failed to remove source "${entry.sourcePath}": ${deleteResult.error}`);
 					}
@@ -214,7 +215,7 @@
 			}
 
 			// 3. Insert new branch at target using server-recalculated data
-			const insertResult = ctrlRef.insertBranch(targetPath, serverResult);
+			const insertResult = ctrlRef.addBranch(targetPath, serverResult);
 
 			const totalTime = (performance.now() - startTime).toFixed(0);
 
@@ -235,36 +236,36 @@
 	}
 
 	// Required by enableClipboard — transforms data for the clipboard snapshot
-	function transformDataForPaste(data: OrgNode): OrgNode | null {
+	function transformDataForPaste({ data }: { data: OrgNode }): OrgNode | null {
 		return { ...data, id: nextId++ };
 	}
 
 	// ── Context menus ──────────────────────────────────────────────────
 
-	function getNodeContextMenu(node: LTreeNode<OrgNode>, selectedNodes?: LTreeNode<OrgNode>[]): ContextMenuEntry[] {
-		const items: ContextMenuEntry[] = [];
+	function getNodeContextMenu({ node }: TreeMenuContext<OrgNode>): TreeMenuEntry<OrgNode>[] {
+		const items: TreeMenuEntry<OrgNode>[] = [];
 
 		// Focus
 		items.push({
-			icon: '\u{1F3AF}', label: 'Focus on node',
-			onclick: () => canvasTreeRef?.focusOnPath(node.path)
+			icon: '\u{1F3AF}', text: 'Focus on node',
+			onClick: () => canvasTreeRef?.focusOnPath(node.path)
 		});
 
 		if (node.hasChildren) {
 			if (node.isExpanded) {
-				items.push({ icon: '\u{1F4C1}', label: 'Collapse', onclick: () => ctrlRef?.collapseNodes(node.path) });
+				items.push({ icon: '\u{1F4C1}', text: 'Collapse', onClick: () => ctrlRef?.collapseNodes(node.path) });
 			} else {
-				items.push({ icon: '\u{1F4C2}', label: 'Expand', onclick: () => ctrlRef?.expandNodes(node.path) });
+				items.push({ icon: '\u{1F4C2}', text: 'Expand', onClick: () => ctrlRef?.expandNodes(node.path) });
 			}
 		}
 
-		items.push({ divider: true, label: 'Move Branch' });
+		items.push({ divider: true, text: 'Move Branch' });
 
 		// Cut — uses built-in clipboard (dims nodes, Ctrl+X also works)
 		items.push({
-			icon: '\u{2702}\u{FE0F}', label: 'Cut branch', shortcut: 'Ctrl+X',
+			icon: '\u{2702}\u{FE0F}', text: 'Cut branch', shortcut: 'Ctrl+X',
 			isDisabled: isProcessing,
-			onclick: () => {
+			onClick: () => {
 				ctrlRef?.cutNodes([node.path]);
 				addLog(`Cut "${node.data?.name}" (ready to paste)`);
 			}
@@ -272,9 +273,9 @@
 
 		// Copy
 		items.push({
-			icon: '\u{1F4CB}', label: 'Copy branch', shortcut: 'Ctrl+C',
+			icon: '\u{1F4CB}', text: 'Copy branch', shortcut: 'Ctrl+C',
 			isDisabled: isProcessing,
-			onclick: () => {
+			onClick: () => {
 				ctrlRef?.copyNodes([node.path]);
 				addLog(`Copied "${node.data?.name}"`);
 			}
@@ -284,23 +285,23 @@
 		if (ctrlRef?.hasClipboardContent()) {
 			const clipOp = ctrlRef.getClipboardOperation();
 			items.push({
-				icon: '\u{1F4CC}', label: `Paste as child (${clipOp})`, shortcut: 'Ctrl+V',
+				icon: '\u{1F4CC}', text: `Paste as child (${clipOp})`, shortcut: 'Ctrl+V',
 				isDisabled: isProcessing,
-				onclick: () => {
+				onClick: () => {
 					if (!ctrlRef) return;
-					// pasteNodes with shouldAutoHandlePaste=false forwards to onPaste handler
+					// pasteNodes with shouldAutoHandlePaste=false forwards to onNodePaste
 					ctrlRef.pasteNodes(node.path, transformDataForPaste, 'child');
 				}
 			});
 		}
 
-		items.push({ divider: true, label: 'Branch Ops' });
+		items.push({ divider: true, text: 'Branch Ops' });
 
 		// Insert branch
 		items.push({
-			icon: '\u{2795}', label: 'Insert branch (7 nodes)',
+			icon: '\u{2795}', text: 'Insert branch (7 nodes)',
 			isDisabled: isProcessing,
-			onclick: () => {
+			onClick: () => {
 				if (!ctrlRef) return;
 				const parentLevel = node.level ?? 0;
 				const basePath = `${node.path}.${nextId}`;
@@ -313,31 +314,31 @@
 					{ id: nextId++, path: `${basePath}.2.1`, parentPath: `${basePath}.2`, level: parentLevel + 3, name: 'Member C', hasChildren: false },
 					{ id: nextId++, path: `${basePath}.2.2`, parentPath: `${basePath}.2`, level: parentLevel + 3, name: 'Member D', hasChildren: false },
 				];
-				const result = ctrlRef.insertBranch(node.path, nodes);
-				addLog(`insertBranch: Added ${result.count} nodes under "${node.data?.name}"`);
+				const result = ctrlRef.addBranch(node.path, nodes);
+				addLog(`addBranch: Added ${result.count} nodes under "${node.data?.name}"`);
 			}
 		});
 
 		// Delete
 		items.push({
-			icon: '\u{1F5D1}\u{FE0F}', label: 'Delete branch', className: 'danger',
+			icon: '\u{1F5D1}\u{FE0F}', text: 'Delete branch', isDanger: true,
 			isDisabled: isProcessing,
-			onclick: () => {
+			onClick: () => {
 				if (!ctrlRef) return;
-				const result = ctrlRef.deleteBranch(node.path);
-				addLog(`deleteBranch: Removed "${node.data?.name}" (${result.removedCount} nodes)`);
-				selectedPath = null;
+				const result = ctrlRef.removeBranch(node.path);
+				addLog(`removeBranch: Removed "${node.data?.name}" (${result.count} nodes)`);
+				focusedPath = null;
 			}
 		});
 
 		if (node.hasChildren) {
 			items.push({
-				icon: '\u{1F9F9}', label: 'Clear children only',
+				icon: '\u{1F9F9}', text: 'Clear children only',
 				isDisabled: isProcessing,
-				onclick: () => {
+				onClick: () => {
 					if (!ctrlRef) return;
-					const result = ctrlRef.deleteBranch(node.path, true);
-					addLog(`Cleared ${result.removedCount} children from "${node.data?.name}"`);
+					const result = ctrlRef.removeBranch(node.path, true);
+					addLog(`Cleared ${result.count} children from "${node.data?.name}"`);
 				}
 			});
 		}
@@ -345,21 +346,21 @@
 		return items;
 	}
 
-	function getGroupContextMenu(parentNode: LTreeNode<OrgNode>, childNodes: LTreeNode<OrgNode>[]): ContextMenuEntry[] {
-		const items: ContextMenuEntry[] = [];
+	function getGroupContextMenu({ node: parentNode, childNodes }: CanvasGroupMenuContext<OrgNode>): TreeMenuEntry<OrgNode>[] {
+		const items: TreeMenuEntry<OrgNode>[] = [];
 
 		if (parentNode.isExpanded) {
-			items.push({ icon: '\u{1F4C1}', label: `Collapse "${parentNode.data?.name}"`, onclick: () => ctrlRef?.collapseNodes(parentNode.path) });
+			items.push({ icon: '\u{1F4C1}', text: `Collapse "${parentNode.data?.name}"`, onClick: () => ctrlRef?.collapseNodes(parentNode.path) });
 		} else {
-			items.push({ icon: '\u{1F4C2}', label: `Expand "${parentNode.data?.name}"`, onclick: () => ctrlRef?.expandNodes(parentNode.path) });
+			items.push({ icon: '\u{1F4C2}', text: `Expand "${parentNode.data?.name}"`, onClick: () => ctrlRef?.expandNodes(parentNode.path) });
 		}
 
-		items.push({ divider: true, label: `${childNodes.length} children` });
+		items.push({ divider: true, text: `${childNodes.length} children` });
 
 		items.push({
-			icon: '\u{2702}\u{FE0F}', label: `Cut "${parentNode.data?.name}"`,
+			icon: '\u{2702}\u{FE0F}', text: `Cut "${parentNode.data?.name}"`,
 			isDisabled: isProcessing,
-			onclick: () => {
+			onClick: () => {
 				ctrlRef?.cutNodes([parentNode.path]);
 				addLog(`Cut "${parentNode.data?.name}" (ready to paste)`);
 			}
@@ -367,9 +368,9 @@
 
 		if (ctrlRef?.hasClipboardContent()) {
 			items.push({
-				icon: '\u{1F4CC}', label: `Paste into "${parentNode.data?.name}"`,
+				icon: '\u{1F4CC}', text: `Paste into "${parentNode.data?.name}"`,
 				isDisabled: isProcessing,
-				onclick: () => {
+				onClick: () => {
 					if (!ctrlRef) return;
 					ctrlRef.pasteNodes(parentNode.path, transformDataForPaste, 'child');
 				}
@@ -379,38 +380,38 @@
 		return items;
 	}
 
-	function getCanvasEmptyContextMenu(): ContextMenuEntry[] {
-		const items: ContextMenuEntry[] = [];
+	function getCanvasEmptyContextMenu(): MenuEntry<CanvasMenuContext<OrgNode>>[] {
+		const items: MenuEntry<CanvasMenuContext<OrgNode>>[] = [];
 
 		items.push({
-			icon: '\u{1F50D}', label: 'Zoom to Fit', shortcut: 'F',
-			onclick: () => canvasTreeRef?.zoomToFit()
+			icon: '\u{1F50D}', text: 'Zoom to Fit', shortcut: 'F',
+			onClick: () => canvasTreeRef?.zoomToFit()
 		});
 
 		items.push({ divider: true });
-		items.push({ icon: '\u{1F4C2}', label: 'Expand All', onclick: () => canvasTreeRef?.expandAll() });
-		items.push({ icon: '\u{1F4C1}', label: 'Collapse All', onclick: () => canvasTreeRef?.collapseAll() });
+		items.push({ icon: '\u{1F4C2}', text: 'Expand All', onClick: () => canvasTreeRef?.expandAll() });
+		items.push({ icon: '\u{1F4C1}', text: 'Collapse All', onClick: () => canvasTreeRef?.collapseAll() });
 
 		items.push({ divider: true });
 		items.push({
-			icon: '\u{1F504}', label: 'Reset tree',
+			icon: '\u{1F504}', text: 'Reset tree',
 			isDisabled: isProcessing,
-			onclick: () => resetTree()
+			onClick: () => resetTree()
 		});
 
 		if (ctrlRef?.hasClipboardContent()) {
-			items.push({ divider: true, label: 'Clipboard' });
+			items.push({ divider: true, text: 'Clipboard' });
 			items.push({
-				icon: '\u{1F4CC}', label: 'Paste at root',
+				icon: '\u{1F4CC}', text: 'Paste at root',
 				isDisabled: isProcessing,
-				onclick: () => {
+				onClick: () => {
 					if (!ctrlRef) return;
 					ctrlRef.pasteNodes('', transformDataForPaste, 'child');
 				}
 			});
 			items.push({
-				icon: '\u{274C}', label: 'Cancel cut/copy',
-				onclick: () => {
+				icon: '\u{274C}', text: 'Cancel cut/copy',
+				onClick: () => {
 					clearClipboard();
 					if (ctrlRef) ctrlRef.cutPaths = new Set();
 					addLog('Clipboard cleared');
@@ -434,7 +435,7 @@
 		<p class="subtitle">
 			Cut a branch, paste it onto another node. The move is processed by a simulated
 			server (configurable delay), which recalculates paths and IDs. The tree updates
-			via <code>deleteBranch</code> + <code>insertBranch</code> with a single emission each.
+			via <code>removeBranch</code> + <code>addBranch</code> with a single emission each.
 		</p>
 	</header>
 
@@ -466,8 +467,8 @@
 			<div class="step">
 				<span class="step-num">4</span>
 				<div>
-					<strong>Tree updates</strong>: <code>deleteBranch</code> removes the source,
-					<code>insertBranch</code> inserts the server result. Single emission each.
+					<strong>Tree updates</strong>: <code>removeBranch</code> removes the source,
+					<code>addBranch</code> inserts the server result. Single emission each.
 				</div>
 			</div>
 		</div>
@@ -492,7 +493,7 @@
 			{#key treeKey}
 				<CanvasTree
 					bind:this={canvasTreeRef}
-					data={treeData}
+					nodes={treeData}
 					idMember="id"
 					pathMember="path"
 					parentPathMember="parentPath"
@@ -502,7 +503,7 @@
 					{sortCallback}
 					isSorted={true}
 					expandLevel={2}
-					bind:selectedPath
+					bind:focusedPath
 					bind:selectedPaths
 					bind:controller={ctrlRef}
 					bind:layoutTime
@@ -514,7 +515,7 @@
 					groupSiblings={true}
 					enableClipboard={true}
 					{transformDataForPaste}
-					onPaste={handlePaste}
+					onNodePaste={handlePaste}
 					getNodeLabelCallback={(node) => node.data?.name || node.path}
 					getNodeContextMenuItemsCallback={getNodeContextMenu}
 					getGroupContextMenuItemsCallback={getGroupContextMenu}
@@ -535,8 +536,8 @@
 			<span>Visible: <strong>{visibleCount}</strong></span>
 			<span>Layout: <strong>{layoutTime.toFixed(1)}ms</strong></span>
 			<span>Draw: <strong>{drawTime.toFixed(1)}ms</strong></span>
-			{#if selectedPath}
-				<span>Selected: <strong>{ctrlRef?.getNodeByPath(selectedPath)?.data?.name || selectedPath}</strong></span>
+			{#if focusedPath}
+				<span>Selected: <strong>{ctrlRef?.getNodeByPath(focusedPath)?.data?.name || focusedPath}</strong></span>
 			{/if}
 		</div>
 	</div>
@@ -556,10 +557,10 @@
 			</p>
 
 			<div class="code-block">
-				<pre><code>{`// shouldAutoHandlePaste = false → paste goes to onPaste
+				<pre><code>{`// shouldAutoHandlePaste = false → paste goes to onNodePaste
 ctrl.shouldAutoHandlePaste = false;
 
-// onPaste handler receives clipboard data
+// onNodePaste handler receives clipboard data
 async function handlePaste(result) {
   showLoading();
   // Send to server for path recalculation
@@ -567,8 +568,8 @@ async function handlePaste(result) {
     result.entries, targetPath
   );
   // Apply server response
-  ctrl.deleteBranch(sourcePath);
-  ctrl.insertBranch(targetPath, serverData);
+  ctrl.removeBranch(sourcePath);
+  ctrl.addBranch(targetPath, serverData);
   hideLoading();
 }`}</code></pre>
 			</div>

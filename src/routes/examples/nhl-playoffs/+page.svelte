@@ -316,7 +316,7 @@
 	let playoffData = $state.raw<PlayoffGame[]>(generatePlayoffData());
 	let growthDirection: GrowthDirection = $state('left');
 	let initialViewport: 'root' | 'origin' = $state('root');
-	let selectedPath = $state<string | null>(null);
+	let focusedPath = $state<string | null>(null);
 	let ctrlRef = $state<TreeController<PlayoffGame> | null>(null);
 	let canvasTreeRef: ReturnType<typeof CanvasTree> | undefined = $state();
 
@@ -509,8 +509,8 @@
 
 	// ── Sort ──────────────────────────────────────────────────────────────
 
-	function sortCallback(items: LTreeNode<PlayoffGame>[]) {
-		return [...items].sort((a, b) => (a.data?.id || 0) - (b.data?.id || 0));
+	function sortCallback({ nodes }: { nodes: LTreeNode<PlayoffGame>[] }) {
+		return [...nodes].sort((a, b) => (a.data?.id || 0) - (b.data?.id || 0));
 	}
 </script>
 
@@ -605,13 +605,13 @@
 		<div class="canvas-container">
 			<CanvasTree
 				bind:this={canvasTreeRef}
-				data={playoffData}
+				nodes={playoffData}
 				idMember="id"
 				pathMember="path"
 				{sortCallback}
 				isSorted={true}
 				expandLevel={99}
-				bind:selectedPath
+				bind:focusedPath
 				bind:controller={ctrlRef}
 				bind:layoutTime
 				bind:drawTime
@@ -637,8 +637,8 @@
 			/>
 		</div>
 
-		{#if selectedPath && ctrlRef}
-			{@const selNode = ctrlRef.getNodeByPath(selectedPath)}
+		{#if focusedPath && ctrlRef}
+			{@const selNode = ctrlRef.getNodeByPath(focusedPath)}
 			{#if selNode?.data}
 				{@const game = selNode.data}
 				{@const rc = ROUND_COLORS[game.round] || ROUND_COLORS['Opening Round']}

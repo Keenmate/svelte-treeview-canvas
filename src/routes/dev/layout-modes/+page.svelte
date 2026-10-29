@@ -158,7 +158,7 @@
 	<div class="canvas-container">
 		<CanvasTree
 			bind:this={canvasTree}
-			data={treeData}
+			nodes={treeData}
 			idMember="id"
 			pathMember="path"
 			parentPathMember="parentPath"

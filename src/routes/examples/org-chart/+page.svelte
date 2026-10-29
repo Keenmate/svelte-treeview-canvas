@@ -2,7 +2,7 @@
 	import { CanvasTree } from '$lib/index.js';
 	import type { TreeController } from '@keenmate/svelte-treeview';
 	import type { LTreeNode } from '@keenmate/svelte-treeview';
-	import type { ContextMenuEntry } from '@keenmate/svelte-treeview';
+	import type { TreeMenuEntry, TreeMenuContext, MenuEntry } from '@keenmate/svelte-treeview';
 	import type {
 		CanvasRenderContext,
 		MeasureNodeWidthCallback,
@@ -252,7 +252,7 @@
 	let groupSiblings = $state(saved.groupSiblings ?? true);
 	let compactMode = $state(saved.compactMode ?? false);
 	let autoFocusOnSelect = $state(saved.autoFocusOnSelect ?? false);
-	let selectedPath = $state<string | null>(null);
+	let focusedPath = $state<string | null>(null);
 	let ctrlRef = $state<TreeController<Person> | null>(null);
 	let canvasTreeRef: ReturnType<typeof CanvasTree> | undefined = $state();
 
@@ -655,36 +655,36 @@
 
 	// ── Sort ──────────────────────────────────────────────────────────────
 
-	function sortCallback(items: LTreeNode<Person>[]) {
-		return [...items].sort((a, b) => (a.data?.name || '').localeCompare(b.data?.name || ''));
+	function sortCallback({ nodes }: { nodes: LTreeNode<Person>[] }) {
+		return [...nodes].sort((a, b) => (a.data?.name || '').localeCompare(b.data?.name || ''));
 	}
 
 	// ── Context Menu ──────────────────────────────────────────────────────
 
-	function getContextMenu(node: LTreeNode<Person>): ContextMenuEntry[] {
+	function getContextMenu({ node }: TreeMenuContext<Person>): TreeMenuEntry<Person>[] {
 		const person = node.data;
 		if (!person) return [];
 
-		const items: ContextMenuEntry[] = [];
+		const items: TreeMenuEntry<Person>[] = [];
 
 		items.push({
 			icon: '\u{1F3AF}',
-			label: 'Focus on person',
-			onclick: () => canvasTreeRef?.focusOnPath(node.path)
+			text: 'Focus on person',
+			onClick: () => canvasTreeRef?.focusOnPath(node.path)
 		});
 
 		items.push({
 			icon: '\u{1F4E7}',
-			label: `Email ${person.name.split(' ')[0]}`,
-			onclick: () => {}
+			text: `Email ${person.name.split(' ')[0]}`,
+			onClick: () => {}
 		});
 
 		if (node.hasChildren) {
 			items.push({ divider: true });
 			items.push({
 				icon: node.isExpanded ? '\u{1F4C1}' : '\u{1F4C2}',
-				label: node.isExpanded ? 'Collapse team' : 'Expand team',
-				onclick: () => {
+				text: node.isExpanded ? 'Collapse team' : 'Expand team',
+				onClick: () => {
 					if (node.isExpanded) canvasTreeRef?.collapseAll(node.path);
 					else canvasTreeRef?.expandAll(node.path);
 				}
@@ -694,8 +694,8 @@
 		items.push({ divider: true });
 		items.push({
 			icon: '\u{1F4CB}',
-			label: 'Copy email',
-			onclick: () => navigator.clipboard.writeText(person.email)
+			text: 'Copy email',
+			onClick: () => navigator.clipboard.writeText(person.email)
 		});
 
 		return items;
@@ -857,17 +857,17 @@
 		<div class="canvas-container" class:canvas-dark={isFuturistic}>
 			<CanvasTree
 				bind:this={canvasTreeRef}
-				data={orgData}
+				nodes={orgData}
 				idMember="id"
 				pathMember="path"
 				{sortCallback}
 				isSorted={true}
 				expandLevel={2}
 				dragDropMode="self"
-				getIsCollapsibleCallback={(node) => (node.level ?? 0) > 2}
+				getIsCollapsibleCallback={({ node }) => (node.level ?? 0) > 2}
 				shouldUseInternalSearchIndex={true}
 				searchValueMember="name"
-				bind:selectedPath
+				bind:focusedPath
 				bind:controller={ctrlRef}
 				bind:layoutTime
 				bind:drawTime
@@ -903,8 +903,8 @@
 			/>
 		</div>
 
-		{#if selectedPath && ctrlRef}
-			{@const selNode = ctrlRef.getNodeByPath(selectedPath)}
+		{#if focusedPath && ctrlRef}
+			{@const selNode = ctrlRef.getNodeByPath(focusedPath)}
 			{#if selNode?.data}
 				{@const person = selNode.data}
 				{@const dept = DEPT_COLORS[person.department] || DEPT_COLORS['Operations']}

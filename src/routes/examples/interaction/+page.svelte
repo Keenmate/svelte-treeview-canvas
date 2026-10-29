@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { CanvasTree } from '$lib/index.js';
-	import type { TreeController, LTreeNode, ClickBehavior } from '@keenmate/svelte-treeview';
+	import type { TreeController, LTreeNode, ClickBehavior, NodeEventContext, SelectionChangeContext } from '@keenmate/svelte-treeview';
 
 	const STORAGE_KEY = 'canvas-interaction-settings';
 
@@ -51,8 +51,8 @@
 		{ id: 43, path: '3.3.3', parentPath: '3.3', name: 'Bundler', icon: '📦', hasChildren: false },
 	];
 
-	function sortByName(items: LTreeNode<Item>[]) {
-		return [...items].sort((a, b) => (a.data?.name || '').localeCompare(b.data?.name || ''));
+	function sortByName({ nodes }: { nodes: LTreeNode<Item>[] }) {
+		return [...nodes].sort((a, b) => (a.data?.name || '').localeCompare(b.data?.name || ''));
 	}
 
 	// ── Persisted settings ───────────────────────────────────────────
@@ -79,8 +79,8 @@
 	let canvasTreeRef = $state<CanvasTree<Item> | null>(null);
 	let ctrlRef = $state<TreeController<Item> | null>(null);
 
-	// Canvas package still uses old API: selectedPath (focused) + selectedPaths (highlighted)
-	let selectedPath = $state<string | null>(null);
+	// Canvas package still uses old API: focusedPath (focused) + selectedPaths (highlighted)
+	let focusedPath = $state<string | null>(null);
 	let selectedPaths = $state(new Set<string>());
 
 	// Metrics
@@ -91,10 +91,10 @@
 
 	$effect(() => { clickBehavior; saveSettings(); });
 
-	function onNodeClick(node: LTreeNode<Item>) {
+	function onNodeClick(_ctx: NodeEventContext<Item>) {
 	}
 
-	function onSelectionChange(paths: Set<string>, nodes: LTreeNode<Item>[]) {
+	function onSelectionChange(_ctx: SelectionChangeContext<Item>) {
 	}
 </script>
 
@@ -126,7 +126,7 @@
 			</label>
 			<button class="btn" onclick={() => canvasTreeRef?.expandAll()}>Expand All</button>
 			<button class="btn btn-secondary" onclick={() => canvasTreeRef?.collapseAll()}>Collapse All</button>
-			<button class="btn btn-secondary" onclick={() => { selectedPaths = new Set(); selectedPath = null; }}>Clear Selection</button>
+			<button class="btn btn-secondary" onclick={() => { selectedPaths = new Set(); focusedPath = null; }}>Clear Selection</button>
 		</div>
 
 		<div class="grid-2">
@@ -134,7 +134,7 @@
 				<CanvasTree
 					bind:this={canvasTreeRef}
 					bind:controller={ctrlRef}
-					data={sampleData}
+					nodes={sampleData}
 					idMember="id"
 					pathMember="path"
 					parentPathMember="parentPath"
@@ -143,7 +143,7 @@
 					isSorted={true}
 					expandLevel={2}
 					bind:clickBehavior
-					bind:selectedPath
+					bind:focusedPath
 					bind:selectedPaths
 					{onNodeClick}
 					{onSelectionChange}
@@ -156,13 +156,13 @@
 			</div>
 			<div>
 				<div class="output">
-					<p class="output-label">Focused Node (selectedPath)</p>
-					<pre>{selectedPath
-	? (() => { const n = ctrlRef?.getNodeByPath(selectedPath); return n ? `${n.data?.icon} ${n.data?.name} (${n.path})` : selectedPath; })()
+					<p class="output-label">Focused Node (focusedPath)</p>
+					<pre>{focusedPath
+	? (() => { const n = ctrlRef?.getNodeByPath(focusedPath); return n ? `${n.data?.icon} ${n.data?.name} (${n.path})` : focusedPath; })()
 	: '(none — click a node)'}</pre>
 				</div>
 				<div class="output">
-					<p class="output-label">Highlighted ({selectedPaths.size})</p>
+					<p class="output-label">Selected ({selectedPaths.size})</p>
 					<pre>{selectedPaths.size > 0
 	? [...selectedPaths].join(', ')
 	: '(none — try Ctrl+click or Shift+click)'}</pre>
@@ -177,9 +177,9 @@ Draw: {drawTime.toFixed(1)}ms</pre>
 				<div class="note">
 					<p class="note-title">Canvas Selection</p>
 					<p>
-						The canvas package currently uses <code>selectedPath</code> (focused node) and <code>selectedPaths</code> (highlighted set).
-						These will be renamed to <code>focusedPath</code> / <code>highlightedPaths</code> when the canvas package migrates to the three-level model.
-						Checkbox-based <code>selectedPaths</code> (data state) is not yet available in the canvas renderer.
+						<code>focusedPath</code> is the cursor node (keyboard navigation, last click) and <code>selectedPaths</code> the
+						selection (click, Ctrl / Shift + click, rectangle) — the same vocabulary as <code>@keenmate/svelte-treeview</code>.
+						The checkbox set (<code>controller.checkedPaths</code>) is not drawn by the canvas renderer.
 					</p>
 				</div>
 			</div>

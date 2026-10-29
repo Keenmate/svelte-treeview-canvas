@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { CanvasTree, type CanvasTheme, type CanvasRenderContext, getBadgeWidth, truncateText } from '$lib/index.js';
-	import type { LTreeNode, ContextMenuEntry } from '@keenmate/svelte-treeview';
+	import type { LTreeNode, TreeMenuEntry, TreeMenuContext, MenuEntry } from '@keenmate/svelte-treeview';
 
 	// ── Types ──────────────────────────────────────────────────────────────
 
@@ -40,8 +40,8 @@
 		{ id: 17, path: '3.2.2',   parentPath: '3.2', level: 3, name: 'Christopher Aleksandrov-Whitfield', title: 'Marketing Specialist', email: 'christopher.aleksandrov-whitfield@acme.com', hasChildren: false },
 	];
 
-	function sortByName(items: LTreeNode<Item>[]) {
-		return [...items].sort((a, b) => (a.data?.name || '').localeCompare(b.data?.name || ''));
+	function sortByName({ nodes }: { nodes: LTreeNode<Item>[] }) {
+		return [...nodes].sort((a, b) => (a.data?.name || '').localeCompare(b.data?.name || ''));
 	}
 
 	// ── Two-line body renderer ──────────────────────────────────────────
@@ -80,21 +80,21 @@
 
 	// ── Context menu ────────────────────────────────────────────────────
 
-	function getContextMenu(node: LTreeNode<Item>): ContextMenuEntry[] {
+	function getContextMenu({ node }: TreeMenuContext<Item>): TreeMenuEntry<Item>[] {
 		const d = node.data;
 		if (!d) return [];
 
-		const items: ContextMenuEntry[] = [
+		const items: TreeMenuEntry<Item>[] = [
 			{
 				icon: '✉',
-				label: `Email ${d.name.split(' ')[0]}`,
-				onclick: () => { window.open('mailto:' + d.email); }
+				text: `Email ${d.name.split(' ')[0]}`,
+				onClick: () => { window.open('mailto:' + d.email); }
 			},
 			{ divider: true },
 			{
 				icon: '📋',
-				label: 'Copy Email',
-				onclick: async () => { await navigator.clipboard.writeText(d.email); }
+				text: 'Copy Email',
+				onClick: async () => { await navigator.clipboard.writeText(d.email); }
 			}
 		];
 
@@ -102,8 +102,8 @@
 			items.push({ divider: true });
 			items.push({
 				icon: node.isExpanded ? '▼' : '▶',
-				label: node.isExpanded ? 'Collapse Team' : 'Expand Team',
-				onclick: () => {} // CanvasTree handles expand/collapse internally
+				text: node.isExpanded ? 'Collapse Team' : 'Expand Team',
+				onClick: () => {} // CanvasTree handles expand/collapse internally
 			});
 		}
 
@@ -375,7 +375,7 @@
 		{#key treeKey}
 			<div class="canvas-wrapper" style={activeStyle}>
 				<CanvasTree
-					data={sampleData}
+					nodes={sampleData}
 					idMember="id"
 					pathMember="path"
 					sortCallback={sortByName}
@@ -448,7 +448,7 @@
 
 		<div class="canvas-wrapper">
 			<CanvasTree
-				data={sampleData}
+				nodes={sampleData}
 				idMember="id"
 				pathMember="path"
 				sortCallback={sortByName}
@@ -477,7 +477,7 @@
 		<div class="code-block">
 			<pre>{`<!-- Set shared design tokens on any ancestor element -->
 <div style="--base-primary-color: #e11d48; --base-main-bg: #fff1f2;">
-  <CanvasTree {data} ... />
+  <CanvasTree {nodes} ... />
 </div>
 
 <!-- Or set them globally -->
@@ -491,12 +491,12 @@
 
 <!-- Component-specific --ct-* always wins over --base-* -->
 <div style="--base-primary-color: #0284c7; --ct-conn-color: #f97316;">
-  <CanvasTree {data} ... />
+  <CanvasTree {nodes} ... />
   <!-- connections are orange, selection is blue -->
 </div>
 
 <!-- theme prop wins over everything -->
-<CanvasTree {data} theme={{ bg: '#000' }} ... />`}
+<CanvasTree {nodes} theme={{ bg: '#000' }} ... />`}
 </pre>
 		</div>
 	</div>

@@ -1,6 +1,8 @@
 <script lang="ts">
+	import type { CanvasMenuContext } from '$lib/types.js';
 	import { CanvasTree } from '$lib/index.js';
-	import type { LTreeNode, ContextMenuEntry } from '@keenmate/svelte-treeview';
+	import type { LTreeNode, TreeMenuEntry, TreeMenuContext, MenuEntry } from '@keenmate/svelte-treeview';
+	import { menuDivider } from '@keenmate/svelte-treeview';
 	import type { TreeController } from '@keenmate/svelte-treeview';
 
 	// ── Types ──────────────────────────────────────────────────────────────
@@ -42,12 +44,12 @@
 	// ── State ────────────────────────────────────────────────────────────
 
 	let treeData = $state.raw<Item[]>(sampleData);
-	let selectedPath = $state<string | null>(null);
+	let focusedPath = $state<string | null>(null);
 	let ctrlRef = $state<TreeController<Item> | null>(null);
 	let eventLog = $state<string[]>([]);
 
-	function sortByName(items: LTreeNode<Item>[]) {
-		return [...items].sort((a, b) => (a.data?.name || '').localeCompare(b.data?.name || ''));
+	function sortByName({ nodes }: { nodes: LTreeNode<Item>[] }) {
+		return [...nodes].sort((a, b) => (a.data?.name || '').localeCompare(b.data?.name || ''));
 	}
 
 	function log(msg: string) {
@@ -57,175 +59,189 @@
 
 	// ── Menu presets ─────────────────────────────────────────────────────
 
-	type MenuPreset = 'basic' | 'icons-shortcuts' | 'submenus' | 'dividers' | 'disabled-hidden' | 'danger' | 'full';
+	type MenuPreset = 'basic' | 'icons-shortcuts' | 'submenus' | 'dividers' | 'disabled-hidden' | 'danger' | 'built-in' | 'full';
 
 	let activePreset: MenuPreset = $state('full');
 
 	const presetDescriptions: Record<MenuPreset, string> = {
-		'basic': 'Simple label + onclick. No icons, no shortcuts.',
+		'basic': 'Simple text + onClick. No icons, no shortcuts.',
 		'icons-shortcuts': 'Icons and keyboard shortcut hints on each item.',
 		'submenus': 'Nested children menus that open on hover.',
 		'dividers': 'Plain and named dividers to group related actions.',
 		'disabled-hidden': 'Conditional isDisabled and isVisible based on node data.',
-		'danger': 'className="danger" for destructive actions.',
+		'danger': 'isDanger: true for destructive actions.',
+		'built-in': 'Built-in action names (copy, cut, paste, delete, expand-subtree, sort…) — texts from labels; they act on the selection when the node is in it.',
 		'full': 'Everything combined: icons, shortcuts, submenus, dividers, disabled, danger, isVisible.',
 	};
 
-	function getBasicMenu(node: LTreeNode<Item>): ContextMenuEntry[] {
+	function getBasicMenu({ node }: TreeMenuContext<Item>): TreeMenuEntry<Item>[] {
 		return [
-			{ label: 'Select', onclick: () => { selectedPath = node.path; log(`Selected: ${node.data?.name}`); } },
-			{ label: 'Log Path', onclick: () => { log(`Path: ${node.path}`); } },
-			{ label: 'Alert Name', onclick: () => { log(`Alert: ${node.data?.name}`); alert(node.data?.name); } },
+			{ text: 'Select', onClick: () => { focusedPath = node.path; log(`Selected: ${node.data?.name}`); } },
+			{ text: 'Log Path', onClick: () => { log(`Path: ${node.path}`); } },
+			{ text: 'Alert Name', onClick: () => { log(`Alert: ${node.data?.name}`); alert(node.data?.name); } },
 		];
 	}
 
-	function getIconsShortcutsMenu(node: LTreeNode<Item>): ContextMenuEntry[] {
+	function getIconsShortcutsMenu({ node }: TreeMenuContext<Item>): TreeMenuEntry<Item>[] {
 		const d = node.data!;
 		return [
-			{ icon: '👤', label: 'View Profile', shortcut: 'V', onclick: () => { log(`View profile: ${d.name}`); } },
-			{ icon: '✉', label: 'Send Email', shortcut: 'E', onclick: () => { log(`Email: ${d.email}`); } },
-			{ icon: '📋', label: 'Copy Email', shortcut: 'Ctrl+C', onclick: async () => { await navigator.clipboard.writeText(d.email); log(`Copied: ${d.email}`); } },
-			{ icon: '🔗', label: 'Copy Path', shortcut: 'Ctrl+P', onclick: async () => { await navigator.clipboard.writeText(node.path); log(`Copied path: ${node.path}`); } },
+			{ icon: '👤', text: 'View Profile', shortcut: 'V', onClick: () => { log(`View profile: ${d.name}`); } },
+			{ icon: '✉', text: 'Send Email', shortcut: 'E', onClick: () => { log(`Email: ${d.email}`); } },
+			{ icon: '📋', text: 'Copy Email', shortcut: 'Ctrl+C', onClick: async () => { await navigator.clipboard.writeText(d.email); log(`Copied: ${d.email}`); } },
+			{ icon: '🔗', text: 'Copy Path', shortcut: 'Ctrl+P', onClick: async () => { await navigator.clipboard.writeText(node.path); log(`Copied path: ${node.path}`); } },
 		];
 	}
 
-	function getSubmenusMenu(node: LTreeNode<Item>): ContextMenuEntry[] {
+	function getSubmenusMenu({ node }: TreeMenuContext<Item>): TreeMenuEntry<Item>[] {
 		const d = node.data!;
 		return [
-			{ icon: '👤', label: 'View', onclick: () => { log(`View: ${d.name}`); } },
+			{ icon: '👤', text: 'View', onClick: () => { log(`View: ${d.name}`); } },
 			{
-				icon: '📋', label: 'Copy As...', children: [
-					{ label: 'Name', onclick: async () => { await navigator.clipboard.writeText(d.name); log(`Copied name: ${d.name}`); } },
-					{ label: 'Email', onclick: async () => { await navigator.clipboard.writeText(d.email); log(`Copied email: ${d.email}`); } },
-					{ label: 'Path', onclick: async () => { await navigator.clipboard.writeText(node.path); log(`Copied path: ${node.path}`); } },
+				icon: '📋', text: 'Copy As...', children: [
+					{ text: 'Name', onClick: async () => { await navigator.clipboard.writeText(d.name); log(`Copied name: ${d.name}`); } },
+					{ text: 'Email', onClick: async () => { await navigator.clipboard.writeText(d.email); log(`Copied email: ${d.email}`); } },
+					{ text: 'Path', onClick: async () => { await navigator.clipboard.writeText(node.path); log(`Copied path: ${node.path}`); } },
 					{
-						label: 'Formatted', children: [
-							{ label: 'JSON', onclick: () => { log(`Copy JSON for ${d.name}`); } },
-							{ label: 'CSV', onclick: () => { log(`Copy CSV for ${d.name}`); } },
-							{ label: 'vCard', onclick: () => { log(`Copy vCard for ${d.name}`); } },
+						text: 'Formatted', children: [
+							{ text: 'JSON', onClick: () => { log(`Copy JSON for ${d.name}`); } },
+							{ text: 'CSV', onClick: () => { log(`Copy CSV for ${d.name}`); } },
+							{ text: 'vCard', onClick: () => { log(`Copy vCard for ${d.name}`); } },
 						]
 					}
 				]
 			},
 			{
-				icon: '📧', label: 'Email To...', children: [
-					{ icon: '👤', label: `${d.name}`, onclick: () => { log(`Email ${d.name}`); } },
-					{ icon: '👥', label: 'Team', onclick: () => { log(`Email team`); } },
-					{ icon: '🏢', label: 'Department', onclick: () => { log(`Email department`); } },
+				icon: '📧', text: 'Email To...', children: [
+					{ icon: '👤', text: `${d.name}`, onClick: () => { log(`Email ${d.name}`); } },
+					{ icon: '👥', text: 'Team', onClick: () => { log(`Email team`); } },
+					{ icon: '🏢', text: 'Department', onClick: () => { log(`Email department`); } },
 				]
 			},
 		];
 	}
 
-	function getDividersMenu(node: LTreeNode<Item>): ContextMenuEntry[] {
+	function getDividersMenu({ node }: TreeMenuContext<Item>): TreeMenuEntry<Item>[] {
 		const d = node.data!;
 		return [
-			{ icon: '👤', label: 'View Profile', onclick: () => { log(`View: ${d.name}`); } },
-			{ icon: '✏️', label: 'Edit', onclick: () => { log(`Edit: ${d.name}`); } },
+			{ icon: '👤', text: 'View Profile', onClick: () => { log(`View: ${d.name}`); } },
+			{ icon: '✏️', text: 'Edit', onClick: () => { log(`Edit: ${d.name}`); } },
 			{ divider: true },
-			{ icon: '📋', label: 'Copy Name', onclick: async () => { await navigator.clipboard.writeText(d.name); log(`Copied: ${d.name}`); } },
-			{ icon: '✉', label: 'Copy Email', onclick: async () => { await navigator.clipboard.writeText(d.email); log(`Copied: ${d.email}`); } },
-			{ divider: true, label: 'Navigation' },
-			{ icon: '🔍', label: 'Focus', onclick: () => { log(`Focus: ${node.path}`); } },
+			{ icon: '📋', text: 'Copy Name', onClick: async () => { await navigator.clipboard.writeText(d.name); log(`Copied: ${d.name}`); } },
+			{ icon: '✉', text: 'Copy Email', onClick: async () => { await navigator.clipboard.writeText(d.email); log(`Copied: ${d.email}`); } },
+			{ divider: true, text: 'Navigation' },
+			{ icon: '🔍', text: 'Focus', onClick: () => { log(`Focus: ${node.path}`); } },
 			...(node.hasChildren ? [
 				{
 					icon: node.isExpanded ? '📂' : '📁',
-					label: node.isExpanded ? 'Collapse' : 'Expand',
-					onclick: () => {
+					text: node.isExpanded ? 'Collapse' : 'Expand',
+					onClick: () => {
 						if (node.isExpanded) ctrlRef?.collapseNodes(node.path);
 						else ctrlRef?.expandNodes(node.path);
 						log(`${node.isExpanded ? 'Collapse' : 'Expand'}: ${node.path}`);
 					}
 				}
-			] as ContextMenuEntry[] : []),
-			{ divider: true, label: 'Danger zone' },
-			{ icon: '🗑️', label: 'Delete', className: 'danger', onclick: () => { log(`Delete (blocked): ${d.name}`); } },
+			] as TreeMenuEntry<Item>[] : []),
+			{ divider: true, text: 'Danger zone' },
+			{ icon: '🗑️', text: 'Delete', isDanger: true, onClick: () => { log(`Delete (blocked): ${d.name}`); } },
 		];
 	}
 
-	function getDisabledHiddenMenu(node: LTreeNode<Item>): ContextMenuEntry[] {
+	function getDisabledHiddenMenu({ node }: TreeMenuContext<Item>): TreeMenuEntry<Item>[] {
 		const d = node.data!;
 		return [
-			{ icon: '👤', label: 'View Profile', onclick: () => { log(`View: ${d.name}`); } },
-			{ icon: '✏️', label: 'Edit', isDisabled: d.readonly, onclick: () => { log(`Edit: ${d.name}`); } },
-			{ icon: '🗑️', label: 'Delete', isDisabled: d.readonly, onclick: () => { log(`Delete: ${d.name}`); } },
+			{ icon: '👤', text: 'View Profile', onClick: () => { log(`View: ${d.name}`); } },
+			{ icon: '✏️', text: 'Edit', isDisabled: d.readonly, onClick: () => { log(`Edit: ${d.name}`); } },
+			{ icon: '🗑️', text: 'Delete', isDisabled: d.readonly, onClick: () => { log(`Delete: ${d.name}`); } },
 			{ divider: true },
-			{ icon: '✉', label: 'Send Email', isVisible: d.level >= 3, onclick: () => { log(`Email: ${d.email}`); } },
-			{ icon: '👥', label: 'View Team', isVisible: d.hasChildren, onclick: () => { log(`View team: ${d.name}`); } },
-			{ icon: '🟢', label: 'Set Active', isVisible: d.status !== 'active', onclick: () => { log(`Set active: ${d.name}`); } },
-			{ icon: '🟡', label: 'Set Away', isVisible: d.status !== 'away', onclick: () => { log(`Set away: ${d.name}`); } },
+			{ icon: '✉', text: 'Send Email', isVisible: d.level >= 3, onClick: () => { log(`Email: ${d.email}`); } },
+			{ icon: '👥', text: 'View Team', isVisible: d.hasChildren, onClick: () => { log(`View team: ${d.name}`); } },
+			{ icon: '🟢', text: 'Set Active', isVisible: d.status !== 'active', onClick: () => { log(`Set active: ${d.name}`); } },
+			{ icon: '🟡', text: 'Set Away', isVisible: d.status !== 'away', onClick: () => { log(`Set away: ${d.name}`); } },
 		];
 	}
 
-	function getDangerMenu(node: LTreeNode<Item>): ContextMenuEntry[] {
+	function getDangerMenu({ node }: TreeMenuContext<Item>): TreeMenuEntry<Item>[] {
 		const d = node.data!;
 		return [
-			{ icon: '👤', label: 'View Profile', onclick: () => { log(`View: ${d.name}`); } },
-			{ icon: '✏️', label: 'Rename', onclick: () => { log(`Rename: ${d.name}`); } },
+			{ icon: '👤', text: 'View Profile', onClick: () => { log(`View: ${d.name}`); } },
+			{ icon: '✏️', text: 'Rename', onClick: () => { log(`Rename: ${d.name}`); } },
 			{ divider: true },
-			{ icon: '⚠️', label: 'Disable Account', className: 'danger', isDisabled: d.readonly, onclick: () => { log(`Disable: ${d.name}`); } },
-			{ icon: '🗑️', label: 'Delete Permanently', className: 'danger', isDisabled: d.readonly, onclick: () => { log(`Delete: ${d.name}`); } },
-			{ icon: '🔥', label: 'Remove from Organization', className: 'danger', onclick: () => { log(`Remove: ${d.name}`); } },
+			{ icon: '⚠️', text: 'Disable Account', isDanger: true, isDisabled: d.readonly, onClick: () => { log(`Disable: ${d.name}`); } },
+			{ icon: '🗑️', text: 'Delete Permanently', isDanger: true, isDisabled: d.readonly, onClick: () => { log(`Delete: ${d.name}`); } },
+			{ icon: '🔥', text: 'Remove from Organization', isDanger: true, onClick: () => { log(`Remove: ${d.name}`); } },
 		];
 	}
 
-	function getFullMenu(node: LTreeNode<Item>): ContextMenuEntry[] {
+	function getFullMenu({ node }: TreeMenuContext<Item>): TreeMenuEntry<Item>[] {
 		const d = node.data!;
 		return [
-			{ icon: '👤', label: 'View Profile', shortcut: 'V', onclick: () => { log(`View profile: ${d.name}`); } },
-			{ icon: '✏️', label: 'Edit', shortcut: 'E', isDisabled: d.readonly, onclick: () => { log(`Edit: ${d.name}`); } },
+			{ icon: '👤', text: 'View Profile', shortcut: 'V', onClick: () => { log(`View profile: ${d.name}`); } },
+			{ icon: '✏️', text: 'Edit', shortcut: 'E', isDisabled: d.readonly, onClick: () => { log(`Edit: ${d.name}`); } },
 			{ divider: true },
-			{ icon: '✉', label: 'Send Email', shortcut: 'M', isVisible: d.level >= 3, onclick: () => { log(`Email: ${d.email}`); } },
+			{ icon: '✉', text: 'Send Email', shortcut: 'M', isVisible: d.level >= 3, onClick: () => { log(`Email: ${d.email}`); } },
 			{
-				icon: '📋', label: 'Copy...', children: [
-					{ icon: '👤', label: 'Name', shortcut: 'N', onclick: async () => { await navigator.clipboard.writeText(d.name); log(`Copied name: ${d.name}`); } },
-					{ icon: '✉', label: 'Email', shortcut: 'E', onclick: async () => { await navigator.clipboard.writeText(d.email); log(`Copied email: ${d.email}`); } },
+				icon: '📋', text: 'Copy...', children: [
+					{ icon: '👤', text: 'Name', shortcut: 'N', onClick: async () => { await navigator.clipboard.writeText(d.name); log(`Copied name: ${d.name}`); } },
+					{ icon: '✉', text: 'Email', shortcut: 'E', onClick: async () => { await navigator.clipboard.writeText(d.email); log(`Copied email: ${d.email}`); } },
 					{ divider: true },
-					{ icon: '🔗', label: 'Path', onclick: async () => { await navigator.clipboard.writeText(node.path); log(`Copied path: ${node.path}`); } },
+					{ icon: '🔗', text: 'Path', onClick: async () => { await navigator.clipboard.writeText(node.path); log(`Copied path: ${node.path}`); } },
 				]
 			},
 			...(node.hasChildren ? [
-				{ divider: true, label: 'Team' } as ContextMenuEntry,
+				{ divider: true, text: 'Team' } as TreeMenuEntry<Item>,
 				{
 					icon: node.isExpanded ? '📂' : '📁',
-					label: node.isExpanded ? 'Collapse' : 'Expand',
+					text: node.isExpanded ? 'Collapse' : 'Expand',
 					shortcut: 'Space',
-					onclick: () => {
+					onClick: () => {
 						if (node.isExpanded) ctrlRef?.collapseNodes(node.path);
 						else ctrlRef?.expandNodes(node.path);
 						log(`${node.isExpanded ? 'Collapse' : 'Expand'}: ${node.path}`);
 					}
-				} as ContextMenuEntry,
+				} as TreeMenuEntry<Item>,
 				{
-					icon: '👥', label: 'View Members', isVisible: node.isExpanded,
-					onclick: () => { log(`View members: ${d.name} (${Object.keys(node.children).length} direct)`); }
-				} as ContextMenuEntry,
+					icon: '👥', text: 'View Members', isVisible: node.isExpanded,
+					onClick: () => { log(`View members: ${d.name} (${Object.keys(node.children).length} direct)`); }
+				} as TreeMenuEntry<Item>,
 			] : []),
-			{ divider: true, label: 'Danger zone' },
-			{ icon: '🗑️', label: 'Delete', shortcut: 'Del', className: 'danger', isDisabled: d.readonly, onclick: () => { log(`Delete (${d.readonly ? 'blocked - readonly' : 'confirmed'}): ${d.name}`); } },
+			{ divider: true, text: 'Danger zone' },
+			{ icon: '🗑️', text: 'Delete', shortcut: 'Del', isDanger: true, isDisabled: d.readonly, onClick: () => { log(`Delete (${d.readonly ? 'blocked - readonly' : 'confirmed'}): ${d.name}`); } },
 		];
 	}
 
-	function getContextMenu(node: LTreeNode<Item>): ContextMenuEntry[] {
-		if (!node.data) return [];
+	function getBuiltInMenu({ node }: TreeMenuContext<Item>): TreeMenuEntry<Item>[] {
+		return [
+			{ icon: '👤', text: 'View Profile', onClick: () => { log(`View: ${node.data?.name}`); } },
+			menuDivider('Clipboard'),
+			'copy', 'cut', 'paste',
+			menuDivider('Structure'),
+			'expand-subtree', 'collapse-subtree', 'sort',
+			menuDivider(),
+			'delete',
+		];
+	}
+
+	function getContextMenu(ctx: TreeMenuContext<Item>): TreeMenuEntry<Item>[] {
+		if (!ctx.node.data) return [];
 		switch (activePreset) {
-			case 'basic': return getBasicMenu(node);
-			case 'icons-shortcuts': return getIconsShortcutsMenu(node);
-			case 'submenus': return getSubmenusMenu(node);
-			case 'dividers': return getDividersMenu(node);
-			case 'disabled-hidden': return getDisabledHiddenMenu(node);
-			case 'danger': return getDangerMenu(node);
-			case 'full': return getFullMenu(node);
+			case 'basic': return getBasicMenu(ctx);
+			case 'icons-shortcuts': return getIconsShortcutsMenu(ctx);
+			case 'submenus': return getSubmenusMenu(ctx);
+			case 'dividers': return getDividersMenu(ctx);
+			case 'disabled-hidden': return getDisabledHiddenMenu(ctx);
+			case 'danger': return getDangerMenu(ctx);
+			case 'built-in': return getBuiltInMenu(ctx);
+			case 'full': return getFullMenu(ctx);
 		}
 	}
 
-	function getCanvasContextMenu(): ContextMenuEntry[] {
+	function getCanvasContextMenu(): MenuEntry<CanvasMenuContext<Item>>[] {
 		return [
-			{ icon: '🌲', label: 'Expand All', shortcut: 'E', onclick: () => { ctrlRef?.expandAll(); log('Expand all'); } },
-			{ icon: '📁', label: 'Collapse All', shortcut: 'C', onclick: () => { ctrlRef?.collapseAll(); log('Collapse all'); } },
+			{ icon: '🌲', text: 'Expand All', shortcut: 'E', onClick: () => { ctrlRef?.expandAll(); log('Expand all'); } },
+			{ icon: '📁', text: 'Collapse All', shortcut: 'C', onClick: () => { ctrlRef?.collapseAll(); log('Collapse all'); } },
 			{ divider: true },
-			{ icon: '🔢', label: `${treeData.length} nodes loaded`, isDisabled: true, onclick: () => {} },
-			{ icon: '📊', label: `Preset: ${activePreset}`, isDisabled: true, onclick: () => {} },
+			{ icon: '🔢', text: `${treeData.length} nodes loaded`, isDisabled: true, onClick: () => {} },
+			{ icon: '📊', text: `Preset: ${activePreset}`, isDisabled: true, onClick: () => {} },
 		];
 	}
 </script>
@@ -239,7 +255,7 @@
 	<header>
 		<a href="/" class="back-link">&larr; Back to Examples</a>
 		<h1>Context Menu</h1>
-		<p class="subtitle">Right-click any node to see the node context menu, or right-click empty canvas space for the canvas menu. Switch presets to explore different <code>ContextMenuEntry</code> features.</p>
+		<p class="subtitle">Right-click any node to see the node context menu, or right-click empty canvas space for the canvas menu. Switch presets to explore different <code>TreeMenuEntry</code> features.</p>
 	</header>
 
 	<!-- Preset selector -->
@@ -291,7 +307,7 @@
 
 		<div class="canvas-wrapper">
 			<CanvasTree
-				data={treeData}
+				nodes={treeData}
 				idMember="id"
 				pathMember="path"
 				sortCallback={sortByName}
@@ -305,11 +321,12 @@
 				columnGap={45}
 				fontSize={12}
 				showDotGrid={true}
-				bind:selectedPath
+				bind:focusedPath
 				bind:controller={ctrlRef}
 				getNodeLabelCallback={(node) => node.data?.name || node.path}
 				getNodeContextMenuItemsCallback={getContextMenu}
 				getCanvasContextMenuItemsCallback={getCanvasContextMenu}
+				onAction={(d) => { if (d.action !== 'custom') log(`Built-in "${d.action}" on ${d.path}`); }}
 			/>
 		</div>
 	</div>
@@ -340,48 +357,56 @@
 		<h2>API Reference</h2>
 
 		<div class="code-block">
-			<pre>{`// Type definitions (from @keenmate/svelte-treeview)
+			<pre>{`// Types (from @keenmate/svelte-treeview — the core action-item model, same as <Tree>)
 
-interface ContextMenuDivider {
-  divider: true;
-  label?: string;        // named divider: ──── label ────
-}
+// One entry: an item, a divider (menuDivider(text?)) or a built-in action name
+type TreeMenuEntry<T> = TreeMenuItem<T> | MenuDivider | TreeAction;
 
-interface ContextMenuItem {
+interface TreeMenuItem<T> {
   id?: string;
-  label: string;
-  icon?: string;         // emoji or icon character
-  shortcut?: string;     // keyboard hint (e.g. "Ctrl+C")
-  isDisabled?: boolean;  // grayed out, not clickable
-  isVisible?: boolean;   // false = skip rendering
-  className?: string;    // e.g. "danger" for red styling
-  onclick?: () => void | Promise<void>;
-  children?: ContextMenuEntry[];  // nested submenu
+  text?: string;
+  icon?: string;          // emoji or icon character
+  tooltip?: string;
+  shortcut?: string;      // keyboard hint (e.g. "Ctrl+C"), also triggers the item
+  isDisabled?: boolean;   // grayed out, not clickable
+  isVisible?: boolean;    // false = skip rendering
+  isDanger?: boolean;     // destructive styling
+  isToggled?: boolean;    // checkable item (role="menuitemcheckbox")
+  cssClass?: string;
+  // get*Callback(ctx) variants of the fields above win over the static values
+  onClick?: (detail) => void | Promise<void>;   // detail = menu ctx + { action, id, item, source }
+  children?: TreeMenuEntry<T>[];                // nested submenu
+  getChildrenCallback?: (ctx) => TreeMenuEntry<T>[] | Promise<...>;
+  shouldCloseOnClick?: boolean;                 // default true
 }
 
-type ContextMenuEntry = ContextMenuItem | ContextMenuDivider;`}</pre>
+// Built-ins: 'copy' | 'cut' | 'paste' | 'delete' | 'expand' | 'collapse' | 'expand-subtree'
+//   | 'collapse-subtree' | 'expand-all' | 'collapse-all' | 'sort' | 'sort-subtree' | 'sort-all'
+
+// ctx: TreeMenuContext<T> = { node, path, parent, siblings, controller }`}</pre>
 		</div>
 
 		<div class="code-block" style="margin-top: 0.75rem;">
 			<pre>{`// Usage with CanvasTree
 
 <CanvasTree
-  {data}
+  {nodes}
   getNodeContextMenuItemsCallback={getContextMenu}
   ...
 />
 
-function getContextMenu(node: LTreeNode<Item>): ContextMenuEntry[] {
+function getContextMenu({ node }: TreeMenuContext<Item>): TreeMenuEntry<Item>[] {
   return [
-    { icon: '👤', label: 'View', shortcut: 'V', onclick: () => view(node) },
-    { divider: true, label: 'Actions' },
-    { icon: '✏️', label: 'Edit', isDisabled: node.data.readonly, onclick: () => edit(node) },
-    { icon: '📋', label: 'Copy...', children: [
-      { label: 'Name', onclick: () => copyName(node) },
-      { label: 'Email', onclick: () => copyEmail(node) },
+    { icon: '👤', text: 'View', shortcut: 'V', onClick: () => view(node) },
+    { divider: true, text: 'Actions' },
+    { icon: '✏️', text: 'Edit', isDisabled: node.data.readonly, onClick: () => edit(node) },
+    { icon: '📋', text: 'Copy...', children: [
+      { text: 'Name', onClick: () => copyName(node) },
+      { text: 'Email', onClick: () => copyEmail(node) },
     ]},
-    { divider: true, label: 'Danger zone' },
-    { icon: '🗑️', label: 'Delete', className: 'danger', onclick: () => del(node) },
+    menuDivider('Danger zone'),
+    { icon: '🗑️', text: 'Delete', isDanger: true, onClick: () => del(node) },
+    'cut', 'paste',   // built-in actions
   ];
 }`}</pre>
 		</div>

@@ -1,7 +1,21 @@
 <script lang="ts" generics="T">
-	import { type Snippet, onDestroy } from 'svelte';
+	import { type Snippet, onDestroy, untrack } from 'svelte';
 	import { TreeProvider, TreeController, type TreeControllerProps } from '@keenmate/svelte-treeview';
-	import type { LTreeNode, DropPosition, ContextMenuEntry, TreeNavigation, TreeNavigationOverrides, NodeTransformContext, PasteResult } from '@keenmate/svelte-treeview';
+	import type {
+		LTreeNode,
+		DropPosition,
+		TreeNavigation,
+		TreeNavigationOverrides,
+		NodeTransformCallback,
+		NodeEventContext,
+		SelectionChangeContext,
+		TreeMenuContext,
+		TreeMenuEntry,
+		MenuEntry,
+		ExpandOptions,
+		SortOptions,
+		TreeCallbackContext
+	} from '@keenmate/svelte-treeview';
 	import type {
 		Orientation,
 		GrowthDirection,
@@ -22,7 +36,11 @@
 		GetBadgeContentCallback,
 		LodLevel,
 		CanvasLevelConfig,
-		FocusOptions
+		FocusOptions,
+		CanvasNodeDropContext,
+		CanvasGroupMenuContext,
+		CanvasMenuContext,
+		CanvasScrollToPathOptions
 	} from './types.js';
 	import { createTextCache } from './canvas-text.js';
 	import { computeLayout } from './canvas-layout.js';
@@ -46,40 +64,59 @@
 		defaultBadgeContent
 	} from './canvas-renderer.js';
 	import { createInteractionManager } from './canvas-interaction.js';
+	import {
+		nodeMenuContext,
+		withController,
+		resolveCanvasMenu,
+		activateCanvasMenuItem,
+		findItemByShortcut,
+		getMenuChildren
+	} from './canvas-menu.js';
 
 	// ── Props ─────────────────────────────────────────────────────────────
 
+	/** A TreeController prop passed straight through (same type as on svelte-treeview's <Tree>). */
+	type P = TreeControllerProps<T>;
+
 	interface Props {
 		// Data (passed through to TreeController)
-		data: T[];
+		/** The tree's data: the input AND the current state — after a mutation (move / add /
+		 *  remove / paste / branch ops) `bind:nodes` receives the tree's data (microtask).
+		 *  Assigning a new array reloads the tree. Same as svelte-treeview's `nodes`. */
+		nodes?: T[];
 		idMember: string;
 		pathMember: string;
-		sortCallback?: (items: LTreeNode<T>[]) => LTreeNode<T>[];
+		sortCallback?: P['sortCallback'];
+		/** Levels expanded on load (0 = only the roots). Default 0, like svelte-treeview. */
 		expandLevel?: number;
 		// Additional TreeController passthrough props
 		isSorted?: boolean;
+		/** `false` = never auto-sort (input order kept; inserts keep their exact position). Default true. */
+		isSortingEnabled?: boolean;
 		parentPathMember?: string;
 		levelMember?: string;
 		hasChildrenMember?: string;
 		displayValueMember?: string;
-		getDisplayValueCallback?: (node: LTreeNode<T>) => string;
+		getDisplayValueCallback?: P['getDisplayValueCallback'];
 		searchValueMember?: string;
-		getSearchValueCallback?: (node: LTreeNode<T>) => string;
+		getSearchValueCallback?: P['getSearchValueCallback'];
 		treePathSeparator?: string;
 		dragDropMode?: 'none' | 'self' | 'cross' | 'both';
 		shouldUseInternalSearchIndex?: boolean;
 		rangeSelectionMode?: 'visual' | 'logical';
 		isExpandedMember?: string;
 		isDraggableMember?: string;
-		getIsDraggableCallback?: (node: LTreeNode<T>) => boolean;
+		getIsDraggableCallback?: P['getIsDraggableCallback'];
 		isDropAllowedMember?: string;
 		allowedDropPositionsMember?: string;
-		getAllowedDropPositionsCallback?: (node: LTreeNode<T>) => DropPosition[] | null;
+		getAllowedDropPositionsCallback?: P['getAllowedDropPositionsCallback'];
 		isCollapsibleMember?: string;
-		getIsCollapsibleCallback?: (node: LTreeNode<T>) => boolean;
+		getIsCollapsibleCallback?: P['getIsCollapsibleCallback'];
 		isSelectableMember?: string;
-		isSelectedMember?: string;
+		isCheckedMember?: string;
 		orderMember?: string;
+		/** UI strings (partial, merged over the English defaults) — e.g. the built-in menu actions' texts. */
+		labels?: P['labels'];
 
 		// Canvas Visual Config
 		layoutMode?: LayoutMode;
@@ -135,19 +172,34 @@
 		getBadgeContentCallback?: GetBadgeContentCallback<T>;
 
 		// Bindable state
-		selectedPath?: string | null;
+		/** The cursor node (keyboard navigation / last clicked). */
+		focusedPath?: string | null;
+		/** The selection (click / Ctrl / Shift / rectangle). Assigning replaces it — silent. */
 		selectedPaths?: Set<string>;
+		/** Paths of the expanded nodes. Assigning replaces the expanded state — silent. */
+		expandedPaths?: Set<string>;
 		controller?: TreeController<T> | null;
 
-		// Events (on* = fire-and-forget)
-		onNodeClick?: (node: LTreeNode<T>) => void;
-		onSelectionChange?: (paths: Set<string>, nodes: LTreeNode<T>[]) => void;
-		onNodeDrop?: (source: LTreeNode<T>, target: LTreeNode<T>, position: DropPosition) => void;
+		// Events (on* = fire-and-forget; one ctx object, `controller` on every ctx)
+		onNodeClick?: (ctx: NodeEventContext<T>) => void;
+		onSelectionChange?: (ctx: SelectionChangeContext<T>) => void;
+		onNodeDrop?: (ctx: CanvasNodeDropContext<T>) => void;
+		onNodeExpand?: P['onNodeExpand'];
+		onNodeCollapse?: P['onNodeCollapse'];
+		onExpandedChange?: P['onExpandedChange'];
+		onTreeChange?: P['onTreeChange'];
+		onNodesReorder?: P['onNodesReorder'];
+		/** A context-menu item ran (after its `onClick` / built-in action). */
+		onAction?: P['onAction'];
+
+		// Interceptors (before*Callback — `false` cancels)
+		beforeExpandCallback?: P['beforeExpandCallback'];
+		beforeActionCallback?: P['beforeActionCallback'];
 
 		// Data providers (get*Callback = returns data)
-		getNodeContextMenuItemsCallback?: (node: LTreeNode<T>, selectedNodes?: LTreeNode<T>[]) => ContextMenuEntry[];
-		getGroupContextMenuItemsCallback?: (parentNode: LTreeNode<T>, childNodes: LTreeNode<T>[]) => ContextMenuEntry[];
-		getCanvasContextMenuItemsCallback?: () => ContextMenuEntry[];
+		getNodeContextMenuItemsCallback?: (ctx: TreeMenuContext<T>) => TreeMenuEntry<T>[];
+		getGroupContextMenuItemsCallback?: (ctx: CanvasGroupMenuContext<T>) => TreeMenuEntry<T>[];
+		getCanvasContextMenuItemsCallback?: (ctx: CanvasMenuContext<T>) => MenuEntry<CanvasMenuContext<T>>[];
 
 		// Metrics (bindable, readonly)
 		layoutTime?: number;
@@ -163,23 +215,30 @@
 
 		// Navigation overrides (partial — override individual nav methods)
 		navigationOverrides?: TreeNavigationOverrides<T>;
-		/** Auto-pan viewport to keep selected node visible when selectedPath changes */
+		/** Auto-pan viewport to keep selected node visible when focusedPath changes */
 		autoFocusOnSelect?: boolean;
 
 		// Clipboard support
 		enableClipboard?: boolean;
-		transformDataForPaste?: (data: T, ctx: NodeTransformContext<T>) => T | null;
-		onPaste?: (result: PasteResult<T>) => void;
+		/** Ctrl+V transform: `(ctx) => data | null` (`ctx.data` = the copied data). */
+		transformDataForPaste?: NodeTransformCallback<T>;
+		onNodePaste?: P['onNodePaste'];
+		onNodeCopy?: P['onNodeCopy'];
+		onNodeCut?: P['onNodeCut'];
+		/** The Delete command ran (built-in `delete` menu action). */
+		onNodeDelete?: P['onNodeDelete'];
+		beforeDeleteCallback?: P['beforeDeleteCallback'];
 	}
 
 	let {
 		// Data props
-		data,
+		nodes = $bindable([] as T[]),
 		idMember,
 		pathMember,
 		sortCallback,
-		expandLevel = 2,
+		expandLevel = 0,
 		isSorted,
+		isSortingEnabled,
 		parentPathMember,
 		levelMember,
 		hasChildrenMember,
@@ -200,8 +259,9 @@
 		isCollapsibleMember,
 		getIsCollapsibleCallback,
 		isSelectableMember,
-		isSelectedMember,
+		isCheckedMember,
 		orderMember,
+		labels,
 
 		// Visual config
 		layoutMode = $bindable('tree'),
@@ -249,14 +309,23 @@
 		getBadgeContentCallback,
 
 		// Bindable state
-		selectedPath = $bindable(null),
+		focusedPath = $bindable(null),
 		selectedPaths = $bindable(new Set<string>()),
+		expandedPaths = $bindable(new Set<string>()),
 		controller = $bindable(null),
 
 		// Events
 		onNodeClick: onNodeClickHandler,
 		onSelectionChange: onSelectionChangeHandler,
 		onNodeDrop: onNodeDropHandler,
+		onNodeExpand,
+		onNodeCollapse,
+		onExpandedChange,
+		onTreeChange,
+		onNodesReorder,
+		onAction,
+		beforeExpandCallback,
+		beforeActionCallback,
 		// Data providers
 		getNodeContextMenuItemsCallback: getNodeContextMenuItemsHandler,
 		getGroupContextMenuItemsCallback: getGroupContextMenuItemsHandler,
@@ -281,7 +350,11 @@
 		// Clipboard
 		enableClipboard = false,
 		transformDataForPaste,
-		onPaste: onPasteHandler,
+		onNodePaste,
+		onNodeCopy,
+		onNodeCut,
+		onNodeDelete,
+		beforeDeleteCallback,
 	}: Props = $props();
 
 	// ── Internal State ──────────────────────────────────────────────────
@@ -299,7 +372,10 @@
 	let canvasMenuVisible = $state(false);
 	let canvasMenuX = $state(0);
 	let canvasMenuY = $state(0);
-	let canvasMenuEntries = $state<ContextMenuEntry[]>([]);
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	let canvasMenuEntries = $state.raw<readonly (MenuEntry<any, string> | string)[]>([]);
+	/** ctx of the open canvas / group menu (CanvasMenuContext or CanvasGroupMenuContext) */
+	let canvasMenuCtx = $state.raw<TreeCallbackContext<T> | null>(null);
 
 	// Layout data (non-reactive for performance)
 	let layoutNodes: LayoutNode<T>[] = [];
@@ -391,6 +467,14 @@
 			if (n) nodes.push(n);
 		}
 		return nodes;
+	}
+
+	/** onSelectionChange({ paths, nodes, controller }) for the current `selectedPaths`. */
+	function emitSelectionChange() {
+		if (!onSelectionChangeHandler || !ctrlRef) return;
+		onSelectionChangeHandler(
+			withController(ctrlRef, { paths: selectedPaths, nodes: getSelectedNodesFromPaths(selectedPaths) })
+		);
 	}
 
 	// ── Node Width Measurement ──────────────────────────────────────────
@@ -558,7 +642,7 @@
 				ctx, layoutNodes, scx, scy,
 				getDepthColor, (node, ln) => ln?.labelOverride ?? getLabel(node),
 				iState.hoveredNode as LayoutNode<T> | null,
-				selectedPath, fontStr, iState.zoom,
+				focusedPath, fontStr, iState.zoom,
 				vl, vt, vr, vb, theme
 			);
 		} else {
@@ -592,7 +676,7 @@
 				visible++;
 
 				const depthColor = getDepthColor(n.depth);
-				const isSelected = (ctrlRef ? ctrlRef.highlightedPaths.has(n.node.path) : selectedPaths.has(n.node.path)) || n.node.path === selectedPath;
+				const isSelected = (ctrlRef ? ctrlRef.selectedPaths.has(n.node.path) : selectedPaths.has(n.node.path)) || n.node.path === focusedPath;
 				const isMatch = isSearchActive && matchedPaths.has(n.node.path);
 				const isCurrent = isMatch && currentResultIndex >= 0 && searchResults[currentResultIndex]?.path === n.node.path;
 				const isDragSrc = iState.dragSrcNode?.node.path === n.node.path && iState.isDragging;
@@ -681,16 +765,16 @@
 			ctx.restore();
 		}
 
-		// Minimap — pass highlightedPaths for multi-select highlight
+		// Minimap — pass selectedPaths for multi-select highlight
 		const tMm0 = performance.now();
 		drawMinimap(
 			ctx, layoutNodes, groupBoxes,
 			layoutWidth, layoutHeight,
-			getDepthColor, selectedPath,
+			getDepthColor, focusedPath,
 			iState.panX, iState.panY, iState.zoom,
 			cw, ch,
 			theme,
-			ctrlRef ? ctrlRef.highlightedPaths : selectedPaths
+			ctrlRef ? ctrlRef.selectedPaths : selectedPaths
 		);
 		const tMm1 = performance.now();
 
@@ -762,8 +846,7 @@
 				);
 				const wasExpanded = ln.node.isExpanded;
 				if (shouldToggle) {
-					if (wasExpanded) ctrlRef!.collapseNodes(ln.node.path);
-					else ctrlRef!.expandNodes(ln.node.path);
+					ctrlRef!.toggleNodeExpanded(ln.node.path);
 					accordionChanged = true;
 				}
 				if (accordionChanged) recomputeAndDraw();
@@ -776,7 +859,7 @@
 						if (firstChildLn) interaction.focusOnNode(firstChildLn, { select: false });
 					}
 				}
-				onNodeClickHandler?.(ln.node);
+				if (ctrlRef) onNodeClickHandler?.(withController(ctrlRef, ctrlRef.getNodeRef(ln.node)));
 			},
 			onNodeDblClick: (ln) => {
 				// Double-click: toggle expand/collapse (useful in 'select' mode where single click only selects)
@@ -784,8 +867,7 @@
 				const nodeCollapsible = ctrlRef.getNodeIsCollapsible(ln.node);
 				if (!collapsible || !nodeCollapsible || !ln.node.hasChildren) return;
 
-				if (ln.node.isExpanded) ctrlRef.collapseNodes(ln.node.path);
-				else ctrlRef.expandNodes(ln.node.path);
+				ctrlRef.toggleNodeExpanded(ln.node.path);
 				recomputeAndDraw();
 
 				if (clickBehavior === 'expand-and-focus' || (layoutMode === 'sunburst' && !ln.node.isExpanded)) {
@@ -805,40 +887,44 @@
 					if (result.success) {
 						console.log('[CanvasTree] recomputeAndDraw after move');
 						recomputeAndDraw();
-						onNodeDropHandler?.(src.node, target.node, position);
+						onNodeDropHandler?.(
+							withController(ctrlRef, {
+								source: ctrlRef.getNodeRef(src.node),
+								target: ctrlRef.getNodeRef(target.node),
+								position
+							})
+						);
 					}
 				}
 			},
 			onContextMenu: (ln, clientX, clientY) => {
 				canvasMenuVisible = false;
-				const inSelection = ctrlRef ? ctrlRef.highlightedPaths.has(ln.node.path) : selectedPaths.has(ln.node.path);
+				const inSelection = ctrlRef ? ctrlRef.selectedPaths.has(ln.node.path) : selectedPaths.has(ln.node.path);
 				console.debug(`[CanvasTree] onContextMenu: ${ln.node.path}, inSelection=${inSelection}`);
 				// If right-clicking on an unselected node, clear multi-selection and select it
-				// Use direct state manipulation — NOT highlightNode() which closes the context menu
+				// Use direct state manipulation — NOT selectNode() which closes the context menu
 				if (!inSelection) {
 					console.debug(`[CanvasTree] onContextMenu: clearing selection, selecting only ${ln.node.path}`);
 					if (ctrlRef) {
-						ctrlRef.clearHighlight();
-						// Directly set selection state without going through _onNodeClicked
-						ln.node.isSelected = true;
-						ctrlRef.selectedPaths = new Set([ln.node.path]);
+						// Replace the selection silently (rows included) without going through _onNodeClicked
+						ctrlRef.updateProps({ selectedPaths: new Set([ln.node.path]) });
 						ctrlRef.focusedNode = ln.node;
-						ctrlRef.highlightAnchor = ln.node.path;
+						ctrlRef.selectionAnchor = ln.node.path;
 					}
 					selectedPaths = new Set([ln.node.path]);
-					selectedPath = ln.node.path;
-					onSelectionChangeHandler?.(selectedPaths, getSelectedNodesFromPaths(selectedPaths));
+					focusedPath = ln.node.path;
+					emitSelectionChange();
 				} else {
 					console.debug(`[CanvasTree] onContextMenu: preserving ${selectedPaths.size} selected nodes`);
 				}
 				if (ctrlRef && getNodeContextMenuItemsHandler) {
-					ctrlRef.getContextMenuItemsHandler = (node, close) => getNodeContextMenuItemsHandler!(node, ctrlRef!.getSelectedNodes());
-					ctrlRef.openContextMenu(ln.node, clientX, clientY);
+					ctrlRef.openContextMenu(ln.node.path, clientX, clientY);
 				}
 			},
 			onCanvasContextMenu: (clientX, clientY) => {
-				if (getCanvasContextMenuItemsHandler) {
-					canvasMenuEntries = getCanvasContextMenuItemsHandler();
+				if (getCanvasContextMenuItemsHandler && ctrlRef) {
+					canvasMenuCtx = withController(ctrlRef, {});
+					canvasMenuEntries = getCanvasContextMenuItemsHandler(canvasMenuCtx);
 					if (canvasMenuEntries.length > 0) {
 						canvasMenuX = clientX;
 						canvasMenuY = clientY;
@@ -851,7 +937,9 @@
 				const parentNode = ctrlRef.getNodeByPath(parentPath);
 				if (!parentNode) return;
 				const childNodes = ctrlRef.getChildren(parentPath);
-				canvasMenuEntries = getGroupContextMenuItemsHandler(parentNode, childNodes);
+				const groupCtx = withController(ctrlRef, { ...nodeMenuContext(ctrlRef, parentNode), childNodes });
+				canvasMenuCtx = groupCtx;
+				canvasMenuEntries = getGroupContextMenuItemsHandler(groupCtx);
 				if (canvasMenuEntries.length > 0) {
 					canvasMenuX = clientX;
 					canvasMenuY = clientY;
@@ -870,13 +958,13 @@
 				if (!path) {
 					// Clicked empty space — deselect all
 					if (ctrlRef) {
-						ctrlRef.clearHighlight();
-						selectedPaths = ctrlRef.highlightedPaths;
+						ctrlRef.clearSelection();
+						selectedPaths = ctrlRef.selectedPaths;
 					} else {
 						selectedPaths = new Set();
 					}
-					selectedPath = null;
-					onSelectionChangeHandler?.(selectedPaths, []);
+					focusedPath = null;
+					emitSelectionChange();
 					return;
 				}
 
@@ -884,13 +972,13 @@
 				const shift = modifiers?.shift ?? false;
 
 				if (ctrlRef) {
-					// Route all selection through TreeController so highlightAnchor stays in sync
+					// Route all selection through TreeController so selectionAnchor stays in sync
 					if (ctrl) {
-						ctrlRef.highlightNode(path, 'toggle');
+						ctrlRef.selectNode(path, 'toggle');
 					} else if (shift) {
-						if (rangeSelectionMode === 'visual' && ctrlRef.highlightAnchor) {
+						if (rangeSelectionMode === 'visual' && ctrlRef.selectionAnchor) {
 							// 2D bounding-box selection using canvas layout positions
-							const anchorPath = ctrlRef.highlightAnchor;
+							const anchorPath = ctrlRef.selectionAnchor;
 							let anchorLn: LayoutNode<T> | null = null;
 							let targetLn: LayoutNode<T> | null = null;
 							for (const ln of layoutNodes) {
@@ -913,21 +1001,21 @@
 									}
 								}
 								console.debug(`[multi-select] Visual 2D range: anchor=${anchorPath}, target=${path}, rect=[${minX.toFixed(0)},${minY.toFixed(0)} → ${maxX.toFixed(0)},${maxY.toFixed(0)}], hit ${hitPaths.length} nodes`);
-								ctrlRef.highlightNodes(hitPaths);
+								ctrlRef.selectNodes(hitPaths);
 								// Preserve anchor for subsequent shift+clicks
-								ctrlRef.highlightAnchor = anchorPath;
+								ctrlRef.selectionAnchor = anchorPath;
 							} else {
 								// Fallback: use controller's 1D range
-								ctrlRef.highlightNode(path, 'range');
+								ctrlRef.selectNode(path, 'range');
 							}
 						} else {
 							// Logical mode or no anchor: use controller's tree-order range
-							ctrlRef.highlightNode(path, 'range');
+							ctrlRef.selectNode(path, 'range');
 						}
 					} else {
-						ctrlRef.highlightNode(path, 'replace');
+						ctrlRef.selectNode(path, 'replace');
 					}
-					selectedPaths = ctrlRef.highlightedPaths;
+					selectedPaths = ctrlRef.selectedPaths;
 				} else {
 					// Fallback without controller
 					if (ctrl) {
@@ -939,19 +1027,19 @@
 						selectedPaths = new Set([path]);
 					}
 				}
-				selectedPath = path;
-				onSelectionChangeHandler?.(selectedPaths, getSelectedNodesFromPaths(selectedPaths));
+				focusedPath = path;
+				emitSelectionChange();
 			},
 			onEmptyClick: () => {
 				// Click on empty canvas — deselect all
 				if (ctrlRef) {
-					ctrlRef.clearHighlight();
-					selectedPaths = ctrlRef.highlightedPaths;
+					ctrlRef.clearSelection();
+					selectedPaths = ctrlRef.selectedPaths;
 				} else {
 					selectedPaths = new Set();
 				}
-				selectedPath = null;
-				onSelectionChangeHandler?.(selectedPaths, []);
+				focusedPath = null;
+				emitSelectionChange();
 			},
 			onRectangleSelect: (paths, additive) => {
 				if (additive) {
@@ -961,8 +1049,8 @@
 				} else {
 					selectedPaths = new Set(paths);
 				}
-				if (paths.length > 0) selectedPath = paths[0];
-				onSelectionChangeHandler?.(selectedPaths, getSelectedNodesFromPaths(selectedPaths));
+				if (paths.length > 0) focusedPath = paths[0];
+				emitSelectionChange();
 			},
 			getNodeLabel: (ln) => getLabel(ln.node),
 			onTooltipPositionChange: (_node, x, y) => {
@@ -983,15 +1071,19 @@
 
 	// ── Controller Capture ──────────────────────────────────────────────
 
-	function createCanvasNavigation(): TreeNavigation<T> {
+	function createCanvasNavigation(defaultNav: TreeNavigation<T>): TreeNavigation<T> {
 		const nav: TreeNavigation<T> = {
 			navTo(path: string) {
 				navigateToPath(path);
 			},
 
+			// Next / previous visible node in tree order (the controller's default navigation)
+			navNext() { defaultNav.navNext(); },
+			navPrev() { defaultNav.navPrev(); },
+
 			navNextSibling() {
-				if (!ctrlRef || !selectedPath) return;
-				const currentLn = layoutNodes.find(ln => ln.node.path === selectedPath);
+				if (!ctrlRef || !focusedPath) return;
+				const currentLn = layoutNodes.find(ln => ln.node.path === focusedPath);
 				if (!currentLn) return;
 				const box = findContainingGroupBox(currentLn);
 
@@ -1028,8 +1120,8 @@
 			},
 
 			navPrevSibling() {
-				if (!ctrlRef || !selectedPath) return;
-				const currentLn = layoutNodes.find(ln => ln.node.path === selectedPath);
+				if (!ctrlRef || !focusedPath) return;
+				const currentLn = layoutNodes.find(ln => ln.node.path === focusedPath);
 				if (!currentLn) return;
 				const box = findContainingGroupBox(currentLn);
 
@@ -1066,8 +1158,8 @@
 			},
 
 			navInto() {
-				if (!ctrlRef || !selectedPath) return;
-				const node = ctrlRef.getNodeByPath(selectedPath);
+				if (!ctrlRef || !focusedPath) return;
+				const node = ctrlRef.getNodeByPath(focusedPath);
 				if (!node) return;
 				const currentLn = layoutNodes.find(ln => ln.node.path === node.path);
 				if (!currentLn) return;
@@ -1116,8 +1208,8 @@
 			},
 
 			navOut() {
-				if (!ctrlRef || !selectedPath) return;
-				const node = ctrlRef.getNodeByPath(selectedPath);
+				if (!ctrlRef || !focusedPath) return;
+				const node = ctrlRef.getNodeByPath(focusedPath);
 				if (!node || !node.parentPath) return;
 				const currentLn = layoutNodes.find(ln => ln.node.path === node.path);
 				if (!currentLn) return;
@@ -1147,8 +1239,8 @@
 			},
 
 			navBackOut() {
-				if (!ctrlRef || !selectedPath) return;
-				const node = ctrlRef.getNodeByPath(selectedPath);
+				if (!ctrlRef || !focusedPath) return;
+				const node = ctrlRef.getNodeByPath(focusedPath);
 				if (!node || !node.parentPath) return;
 				// Collapse parent and navigate to it
 				ctrlRef.collapseNodes(node.parentPath);
@@ -1157,14 +1249,10 @@
 			},
 
 			navToggle() {
-				if (!ctrlRef || !selectedPath) return;
-				const node = ctrlRef.getNodeByPath(selectedPath);
+				if (!ctrlRef || !focusedPath) return;
+				const node = ctrlRef.getNodeByPath(focusedPath);
 				if (!node || !node.hasChildren) return;
-				if (node.isExpanded) {
-					ctrlRef.collapseNodes(selectedPath);
-				} else {
-					ctrlRef.expandNodes(selectedPath);
-				}
+				ctrlRef.toggleNodeExpanded(focusedPath);
 				recomputeAndDraw();
 			},
 
@@ -1193,15 +1281,17 @@
 				navigateToPath(sorted[0].node.path);
 			},
 
-			// Shift+nav: delegate to controller's default range-highlight logic for now
-			navPageDown() { ctrlRef?.navPageDown(); },
-			navPageUp() { ctrlRef?.navPageUp(); },
-			navHighlightNext() { ctrlRef?.navHighlightNext(); },
-			navHighlightPrev() { ctrlRef?.navHighlightPrev(); },
-			navHighlightFirst() { ctrlRef?.navHighlightFirst(); },
-			navHighlightLast() { ctrlRef?.navHighlightLast(); },
-			navHighlightPageDown() { ctrlRef?.navHighlightPageDown(); },
-			navHighlightPageUp() { ctrlRef?.navHighlightPageUp(); }
+			// Shift+nav: delegate to controller's default range-select logic for now
+			// (the controller's own default navigation — NOT ctrlRef.nav*(), which dispatches
+			// back into this object and would recurse)
+			navPageDown() { defaultNav.navPageDown(); },
+			navPageUp() { defaultNav.navPageUp(); },
+			navSelectNext() { defaultNav.navSelectNext(); },
+			navSelectPrev() { defaultNav.navSelectPrev(); },
+			navSelectFirst() { defaultNav.navSelectFirst(); },
+			navSelectLast() { defaultNav.navSelectLast(); },
+			navSelectPageDown() { defaultNav.navSelectPageDown(); },
+			navSelectPageUp() { defaultNav.navSelectPageUp(); }
 		};
 
 		return nav;
@@ -1321,9 +1411,11 @@
 
 	function captureCtrl(ctrl: TreeController<T>) {
 		// Only set the non-reactive internal ref here (called from template)
+		if (ctrlRef === ctrl) return;
 		ctrlRef = ctrl;
-		// Install canvas spatial navigation on the controller
-		const canvasNav = createCanvasNavigation();
+		// Install canvas spatial navigation on the controller (over its default navigation,
+		// which the canvas delegates to for page / range moves)
+		const canvasNav = createCanvasNavigation(ctrl.navigation);
 		if (navigationOverrides) {
 			ctrl.navigation = { ...canvasNav, ...navigationOverrides };
 		} else {
@@ -1510,34 +1602,9 @@
 	}
 
 	// ── Context menu keyboard shortcut handling ──────────────────────────
-	function parseShortcut(shortcut: string): { key: string; ctrl: boolean; shift: boolean; alt: boolean } {
-		const parts = shortcut.split('+').map(p => p.trim());
-		const key = parts.pop()!;
-		return {
-			key: key.toLowerCase(),
-			ctrl: parts.some(p => p.toLowerCase() === 'ctrl'),
-			shift: parts.some(p => p.toLowerCase() === 'shift'),
-			alt: parts.some(p => p.toLowerCase() === 'alt'),
-		};
-	}
-
-	function findEntryByShortcut(entries: ContextMenuEntry[], event: KeyboardEvent): ContextMenuEntry | null {
-		for (const entry of entries) {
-			if ('divider' in entry) continue;
-			if (entry.isVisible === false || entry.isDisabled) continue;
-			if (entry.shortcut) {
-				const parsed = parseShortcut(entry.shortcut);
-				const eventKey = event.key.length === 1 ? event.key.toLowerCase() : event.key;
-				if (eventKey === parsed.key && event.ctrlKey === parsed.ctrl && event.shiftKey === parsed.shift && event.altKey === parsed.alt) {
-					return entry;
-				}
-			}
-			if (entry.children) {
-				const found = findEntryByShortcut(entry.children, event);
-				if (found) return found;
-			}
-		}
-		return null;
+	/** Options for activateCanvasMenuItem on the empty-canvas menu (node menus use the controller's handlers). */
+	function menuActivateOpts(event?: Event, trigger?: HTMLElement) {
+		return { event, trigger, beforeActionCallback, onAction };
 	}
 
 	function onKeyDown(e: KeyboardEvent) {
@@ -1552,16 +1619,15 @@
 			}
 
 			if (ctrlRef.contextMenuNode && getNodeContextMenuItemsHandler) {
-				const entries = getNodeContextMenuItemsHandler(ctrlRef.contextMenuNode, ctrlRef.getSelectedNodes());
-				const match = findEntryByShortcut(entries, e);
-				if (match && !('divider' in match) && match.onclick) {
+				const menuCtx = nodeMenuContext(ctrlRef, ctrlRef.contextMenuNode as LTreeNode<T>);
+				const entries = getNodeContextMenuItemsHandler(menuCtx);
+				const match = findItemByShortcut(ctrlRef, entries, menuCtx, e);
+				if (match) {
 					e.preventDefault();
-					try {
-						match.onclick();
-					} catch (error) {
-						console.error('Context menu shortcut error:', error);
-					}
-					ctrlRef.closeContextMenu();
+					const ctrl = ctrlRef;
+					void activateCanvasMenuItem(ctrl, match, menuCtx, { event: e }).finally(() => {
+						if (match.shouldCloseOnClick !== false) ctrl.closeContextMenu();
+					});
 					return;
 				}
 			}
@@ -1574,15 +1640,13 @@
 				return;
 			}
 
-			const match = findEntryByShortcut(canvasMenuEntries, e);
-			if (match && !('divider' in match) && match.onclick) {
+			const menuCtx = canvasMenuCtx;
+			const match = ctrlRef && menuCtx ? findItemByShortcut(ctrlRef, canvasMenuEntries, menuCtx, e) : null;
+			if (match && ctrlRef && menuCtx) {
 				e.preventDefault();
-				try {
-					match.onclick();
-				} catch (error) {
-					console.error('Canvas context menu shortcut error:', error);
-				}
-				canvasMenuVisible = false;
+				void activateCanvasMenuItem(ctrlRef, match, menuCtx, menuActivateOpts(e)).finally(() => {
+					if (match.shouldCloseOnClick !== false) canvasMenuVisible = false;
+				});
 				return;
 			}
 		}
@@ -1601,9 +1665,9 @@
 				return;
 			}
 			if (e.ctrlKey && e.key === 'v' && transformDataForPaste) {
-				// selectedPath = paste as child; no selection = paste as root
-				const result = ctrlRef.pasteNodes(selectedPath ?? '', transformDataForPaste, 'child');
-				onPasteHandler?.(result);
+				// focusedPath = paste as child; no selection = paste as root
+				// (pasteNodes fires onNodePaste itself)
+				ctrlRef.pasteNodes(focusedPath ?? '', transformDataForPaste, 'child');
 				requestRedraw();
 				e.preventDefault();
 				return;
@@ -1616,7 +1680,7 @@
 			}
 		}
 
-		if (!ctrlRef || !selectedPath) return;
+		if (!ctrlRef || !focusedPath) return;
 
 		// Enter/Space: toggle expand/collapse
 		if (e.key === 'Enter' || e.key === ' ') {
@@ -1624,27 +1688,27 @@
 			ctrlRef.navToggle();
 			return;
 		}
-		// Home: select first node (Shift: extend highlight)
+		// Home: select first node (Shift: extend selection)
 		if (e.key === 'Home') {
 			e.preventDefault();
-			e.shiftKey ? ctrlRef.navHighlightFirst() : ctrlRef.navFirst();
+			e.shiftKey ? ctrlRef.navSelectFirst() : ctrlRef.navFirst();
 			return;
 		}
-		// End: select last node (Shift: extend highlight)
+		// End: select last node (Shift: extend selection)
 		if (e.key === 'End') {
 			e.preventDefault();
-			e.shiftKey ? ctrlRef.navHighlightLast() : ctrlRef.navLast();
+			e.shiftKey ? ctrlRef.navSelectLast() : ctrlRef.navLast();
 			return;
 		}
-		// PageDown/PageUp (Shift: extend highlight)
+		// PageDown/PageUp (Shift: extend selection)
 		if (e.key === 'PageDown') {
 			e.preventDefault();
-			e.shiftKey ? ctrlRef.navHighlightPageDown() : ctrlRef.navPageDown();
+			e.shiftKey ? ctrlRef.navSelectPageDown() : ctrlRef.navPageDown();
 			return;
 		}
 		if (e.key === 'PageUp') {
 			e.preventDefault();
-			e.shiftKey ? ctrlRef.navHighlightPageUp() : ctrlRef.navPageUp();
+			e.shiftKey ? ctrlRef.navSelectPageUp() : ctrlRef.navPageUp();
 			return;
 		}
 		// Backspace: collapse parent + select it
@@ -1657,7 +1721,7 @@
 		// Arrow keys: resolve physical key → logical action → nav method
 		// Special case: balanced root node, ArrowLeft/Right enter specific arms
 		if (layoutMode === 'balanced') {
-			const node = ctrlRef.getNodeByPath(selectedPath);
+			const node = ctrlRef.getNodeByPath(focusedPath);
 			if (node) {
 				const currentLn = layoutNodes.find(ln => ln.node.path === node.path);
 				const rootLn = getBalancedRootLn();
@@ -1691,7 +1755,7 @@
 
 		// Special case: fishbone physical-key-to-action mapping differs from generic
 		if (layoutMode === 'fishbone') {
-			const currentLn = layoutNodes.find(ln => ln.node.path === selectedPath);
+			const currentLn = layoutNodes.find(ln => ln.node.path === focusedPath);
 			if (!currentLn) return;
 
 			const isH = !(growthDirection === 'up' || growthDirection === 'down');
@@ -1826,7 +1890,7 @@
 		// For balanced layout, invert Left/Right for nodes on the left arm
 		let navDir: GrowthDirection | undefined;
 		if (layoutMode === 'balanced') {
-			const currentLn = layoutNodes.find(ln => ln.node.path === selectedPath);
+			const currentLn = layoutNodes.find(ln => ln.node.path === focusedPath);
 			const rootLn = getBalancedRootLn();
 			if (currentLn && rootLn) {
 				const arm = getBalancedArmDir(currentLn, rootLn);
@@ -1840,8 +1904,8 @@
 
 		if (e.shiftKey && (action === 'crossNext' || action === 'crossPrev')) {
 			// Shift+cross arrow: extend highlight
-			if (action === 'crossNext') ctrlRef.navHighlightNext();
-			else ctrlRef.navHighlightPrev();
+			if (action === 'crossNext') ctrlRef.navSelectNext();
+			else ctrlRef.navSelectPrev();
 		} else {
 			switch (action) {
 				case 'crossNext':   ctrlRef.navNextSibling(); break;
@@ -1853,7 +1917,7 @@
 	}
 
 	function navigateToPath(path: string) {
-		selectedPath = path;
+		focusedPath = path;
 		selectedPaths = new Set([path]);
 		doLayout(); // ensure node is in layout (may have been expanded)
 		interaction.ensurePathVisible(path);
@@ -1861,9 +1925,9 @@
 
 	// ── Effects ─────────────────────────────────────────────────────────
 
-	// Auto-pan to selected node when selectedPath changes externally
+	// Auto-pan to selected node when focusedPath changes externally
 	$effect(() => {
-		const path = selectedPath;
+		const path = focusedPath;
 		if (autoFocusOnSelect && path && canvasEl) {
 			interaction.ensurePathVisible(path);
 			// Also scroll the page so the canvas container is visible
@@ -1913,12 +1977,60 @@
 		requestRedraw();
 	});
 
-	// Sync highlighted paths → local selectedPaths bindable + trigger redraw
+	// Sync the controller's selection → local selectedPaths bindable + trigger redraw
 	$effect(() => {
 		if (!ctrlRef) return;
-		const hp = ctrlRef.highlightedPaths;
+		const hp = ctrlRef.selectedPaths;
 		selectedPaths = hp;
 		requestRedraw();
+	});
+	// Assigning selectedPaths replaces the selection (rows too) — silent, no event
+	$effect(() => {
+		const sp = selectedPaths;
+		if (!ctrlRef) return;
+		const cp = untrack(() => ctrlRef!.selectedPaths);
+		if (sp !== cp && (sp.size !== cp.size || [...sp].some((p) => !cp.has(p)))) {
+			ctrlRef.updateProps({ selectedPaths: sp });
+			requestRedraw();
+		}
+	});
+
+	// expandedPaths: controller → bindable, and an assigned set → controller (silent)
+	$effect(() => {
+		if (!ctrlRef) return;
+		expandedPaths = ctrlRef.expandedPaths;
+	});
+	$effect(() => {
+		const ep = expandedPaths;
+		if (!ctrlRef) return;
+		const cp = untrack(() => ctrlRef!.expandedPaths);
+		if (ep !== cp && (ep.size !== cp.size || [...ep].some((p) => !cp.has(p)))) {
+			ctrlRef.updateProps({ expandedPaths: ep });
+		}
+	});
+
+	// nodes is input AND current state (like svelte-treeview's <Tree>): a new array reloads the
+	// tree; the controller's write-back after a mutation flows out to bind:nodes (not fed back in).
+	let isNodesEcho = false;
+	$effect(() => {
+		const incoming = nodes;
+		if (!ctrlRef) return;
+		if (isNodesEcho) {
+			isNodesEcho = false;
+			return;
+		}
+		// The array the controller already holds (the initial load, or its own write-back
+		// echoed through bind:nodes) is not a new input
+		if (incoming === untrack(() => ctrlRef!.nodes)) return;
+		ctrlRef.nodes = incoming;
+	});
+	$effect(() => {
+		if (!ctrlRef) return;
+		const current = ctrlRef.nodes;
+		if (untrack(() => nodes) !== current) {
+			isNodesEcho = true;
+			nodes = current;
+		}
 	});
 
 	// Read CSS theme variables from container
@@ -1970,57 +2082,63 @@
 	/** Scroll to a node without changing level-axis pan.
 	 *  In horizontal layout: only adjusts vertical scroll.
 	 *  In vertical layout: only adjusts horizontal scroll.
-	 *  If the node is already visible, does nothing. */
-	export function scrollToPath(path: string) {
+	 *  If the node is already visible, does nothing.
+	 *  `shouldExpandAncestors` (default true) opens its collapsed ancestors first. */
+	export function scrollToPath(path: string, options?: CanvasScrollToPathOptions) {
 		if (!ctrlRef) return;
 		const node = ctrlRef.getNodeByPath(path);
 		if (!node) return;
-		if (node.parentPath) {
+		if (node.parentPath && (options?.shouldExpandAncestors ?? true)) {
 			ctrlRef.expandNodes(node.parentPath);
 			doLayout();
 		}
 		interaction.scrollToPath(path);
 	}
 
-	export function expandNodes(
-		path: string | string[],
-		options?: { exclusive?: boolean; noEmit?: boolean }
-	) {
+	/** Expand `paths` (ancestors opened). `isExclusive` collapses everything else; `isSilent` = no events. */
+	export async function expandNodes(paths: string | string[], options?: ExpandOptions) {
 		if (!ctrlRef) return;
-		console.debug('[CanvasTree.expandNodes]', { path, options });
-		ctrlRef.expandNodes(path, options);
+		console.debug('[CanvasTree.expandNodes]', { paths, options });
+		const done = ctrlRef.expandNodes(paths, options);
+		recomputeAndDraw();
+		await done;
 		recomputeAndDraw();
 	}
 
-	export function collapseNodes(
-		path: string | string[],
-		options?: { noEmit?: boolean }
-	) {
+	export async function collapseNodes(paths: string | string[], options?: ExpandOptions) {
 		if (!ctrlRef) return;
-		console.debug('[CanvasTree.collapseNodes]', { path, options });
-		ctrlRef.collapseNodes(path, options);
+		console.debug('[CanvasTree.collapseNodes]', { paths, options });
+		const done = ctrlRef.collapseNodes(paths, options);
+		recomputeAndDraw();
+		await done;
+	}
+
+	/** Expand or collapse one node (through `beforeExpandCallback` when expanding). */
+	export async function toggleNodeExpanded(path: string, options?: ExpandOptions) {
+		if (!ctrlRef) return;
+		const done = ctrlRef.toggleNodeExpanded(path, options);
+		recomputeAndDraw();
+		await done;
 		recomputeAndDraw();
 	}
 
-	export function expandAll(
-		nodePath?: string | string[] | null,
-		options?: { exclusive?: boolean; noEmit?: boolean }
-	) {
+	/** Expand `paths` and all their descendants (`null` / omitted = the whole tree). */
+	export function expandAll(paths?: string | string[] | null, options?: ExpandOptions) {
 		if (!ctrlRef) return;
-		console.debug('[CanvasTree.expandAll]', { nodePath, options, layoutMode });
+		console.debug('[CanvasTree.expandAll]', { paths, options, layoutMode });
 		if (layoutMode === 'sunburst') {
-			// Sunburst has its own overflow-aware expand pass. `exclusive` is
+			// Sunburst has its own overflow-aware expand pass. `isExclusive` is
 			// approximated by collapsing first; arrays iterate per-path.
-			if (options?.exclusive) ctrlRef.collapseAll(undefined, { noEmit: true });
-			const paths = Array.isArray(nodePath) ? nodePath : [nodePath ?? null];
-			for (const p of paths) sunburstExpandAll(ctrlRef, p ?? null);
+			if (options?.isExclusive) ctrlRef.collapseAll(undefined, { isSilent: true });
+			const list = Array.isArray(paths) ? paths : [paths ?? null];
+			for (const p of list) sunburstExpandAll(ctrlRef, p ?? null);
 		} else {
-			ctrlRef.expandAll(nodePath, options);
+			ctrlRef.expandAll(paths, options);
 		}
 		recomputeAndDraw();
 		// Camera: single target -> focus on it; array or whole-tree -> fit-to-view.
-		if (typeof nodePath === 'string' && nodePath) {
-			interaction.focusOnPath(nodePath, { zoom: 0.5, select: false });
+		if (typeof paths === 'string' && paths) {
+			interaction.focusOnPath(paths, { zoom: 0.5, select: false });
 		} else {
 			interaction.zoomToFit();
 		}
@@ -2122,25 +2240,37 @@
 		}
 	}
 
-	export function collapseAll(
-		nodePath?: string | string[] | null,
-		options?: { noEmit?: boolean }
-	) {
+	/** Collapse `paths` and all their descendants (`null` / omitted = the whole tree). */
+	export function collapseAll(paths?: string | string[] | null, options?: ExpandOptions) {
 		if (!ctrlRef) return;
-		console.debug('[CanvasTree.collapseAll]', { nodePath, options });
-		ctrlRef.collapseAll(nodePath, options);
+		console.debug('[CanvasTree.collapseAll]', { paths, options });
+		ctrlRef.collapseAll(paths, options);
 		recomputeAndDraw();
 		// Camera: single target -> focus on it; array or whole-tree -> fit-to-view.
-		if (typeof nodePath === 'string' && nodePath) {
-			interaction.focusOnPath(nodePath, { zoom: 'auto', select: false });
+		if (typeof paths === 'string' && paths) {
+			interaction.focusOnPath(paths, { zoom: 'auto', select: false });
 		} else {
 			interaction.zoomToFit();
 		}
 	}
 
-	export function searchNodes(query: string): LTreeNode<T>[] {
+	/** Sort the children of each node in `paths` (one level; `''` = the root level). Runs regardless of `isSortingEnabled`. */
+	export function sortNodes(paths: string | string[], options?: SortOptions<T>) {
+		if (!ctrlRef) return;
+		ctrlRef.sortNodes(paths, options);
+		recomputeAndDraw();
+	}
+
+	/** Sort whole subtrees (`null` / omitted = the whole tree). */
+	export function sortAll(paths?: string | string[] | null, options?: SortOptions<T>) {
+		if (!ctrlRef) return;
+		ctrlRef.sortAll(paths, options);
+		recomputeAndDraw();
+	}
+
+	export function searchNodes(term: string): LTreeNode<T>[] {
 		if (!ctrlRef) return [];
-		searchResults = ctrlRef.searchNodes(query);
+		searchResults = ctrlRef.searchNodes(term);
 		matchedPaths = new Set(searchResults.map(n => n.path));
 		if (searchResults.length > 0) {
 			currentResultIndex = 0;
@@ -2152,9 +2282,9 @@
 		return searchResults;
 	}
 
-	export function filterNodes(query: string) {
+	export function filterNodes(term: string) {
 		if (!ctrlRef) return;
-		ctrlRef.filterNodes(query);
+		ctrlRef.filterNodes(term);
 		// changeTracker effect handles layout recomputation
 	}
 
@@ -2170,7 +2300,7 @@
 		if (!ctrlRef || searchResults.length === 0) return;
 		currentResultIndex = ((index % searchResults.length) + searchResults.length) % searchResults.length;
 		const node = searchResults[currentResultIndex];
-		selectedPath = node.path;
+		focusedPath = node.path;
 		selectedPaths = new Set([node.path]);
 		if (node.parentPath) {
 			ctrlRef.expandNodes(node.parentPath);
@@ -2273,12 +2403,15 @@
 <svelte:window onkeydown={onKeyDown} />
 
 <TreeProvider
-	{data}
+	{nodes}
 	{idMember}
 	{pathMember}
 	{sortCallback}
 	{isSorted}
+	{isSortingEnabled}
 	{expandLevel}
+	{expandedPaths}
+	{labels}
 	parentPathMember={parentPathMember}
 	levelMember={levelMember}
 	hasChildrenMember={hasChildrenMember}
@@ -2299,9 +2432,22 @@
 	isCollapsibleMember={isCollapsibleMember}
 	getIsCollapsibleCallback={getIsCollapsibleCallback}
 	isSelectableMember={isSelectableMember}
-	isSelectedMember={isSelectedMember}
+	isCheckedMember={isCheckedMember}
 	orderMember={orderMember}
-	getContextMenuItemsCallback={getNodeContextMenuItemsHandler ? (node, _close, selectedNodes) => getNodeContextMenuItemsHandler(node, selectedNodes) : undefined}
+	{onNodeExpand}
+	{onNodeCollapse}
+	{onExpandedChange}
+	{beforeExpandCallback}
+	{onTreeChange}
+	{onNodesReorder}
+	{onNodePaste}
+	{onNodeCopy}
+	{onNodeCut}
+	{onNodeDelete}
+	{beforeDeleteCallback}
+	{beforeActionCallback}
+	{onAction}
+	getContextMenuItemsCallback={getNodeContextMenuItemsHandler}
 	contextMenuXOffset={8}
 	contextMenuYOffset={4}
 >
@@ -2334,48 +2480,60 @@
 			</div>
 		{/if}
 
-		{#snippet renderCanvasEntries(entries: ContextMenuEntry[], closeFn: () => void)}
-			{#each entries as entry}
-				{#if 'divider' in entry}
+		<!-- One menu level: TreeMenuEntry model (action items, dividers, built-in action names). -->
+		<!-- eslint-disable-next-line @typescript-eslint/no-explicit-any -->
+		{#snippet renderMenuLevel(entries: readonly (MenuEntry<any, string> | string)[], menuCtx: TreeCallbackContext<T>, closeFn: () => void)}
+			{#each resolveCanvasMenu(ctrl, entries, menuCtx) as entry}
+				{#if entry.kind === 'divider'}
 					<div class="canvas-tree-ctx-menu-divider" role="separator">
-						{#if entry.label}
-							<span class="canvas-tree-ctx-menu-divider-label">{entry.label}</span>
+						{#if entry.text}
+							<span class="canvas-tree-ctx-menu-divider-label">{entry.text}</span>
 						{/if}
 					</div>
-				{:else if entry.isVisible !== false}
-					{@const hasChildren = entry.children && entry.children.length > 0}
+				{:else}
+					{@const item = entry.item}
+					{@const r = entry.resolved}
+					{@const isToggle = item.isToggled !== undefined || typeof item.getIsToggledCallback === 'function'}
 					<div class="canvas-tree-ctx-menu-item-wrapper">
 					<button
-						class="canvas-tree-ctx-menu-item {entry.className || ''}"
-						class:disabled={entry.isDisabled}
-						class:has-children={hasChildren}
-						disabled={entry.isDisabled}
-						role="menuitem"
-						onclick={async () => {
-							if (!hasChildren) {
-								try {
-									await entry.onclick?.();
-								} catch (error) {
-									console.error('Context menu callback error:', error);
-								}
-								closeFn();
+						class="canvas-tree-ctx-menu-item {r.cssClass}"
+						class:disabled={r.isDisabled}
+						class:danger={r.isDanger}
+						class:toggled={r.isToggled}
+						class:has-children={entry.hasChildren}
+						disabled={r.isDisabled}
+						role={isToggle ? 'menuitemcheckbox' : 'menuitem'}
+						aria-checked={isToggle ? r.isToggled : undefined}
+						title={r.tooltip}
+						data-action={r.action !== 'custom' ? r.action : undefined}
+						data-id={r.id}
+						onclick={async (event) => {
+							if (entry.hasChildren) return;
+							const trigger = event.currentTarget as HTMLElement;
+							try {
+								await activateCanvasMenuItem(ctrl, item, menuCtx, menuActivateOpts(event, trigger));
+							} finally {
+								if (item.shouldCloseOnClick !== false) closeFn();
+								requestRedraw();
 							}
 						}}
 					>
-						{#if entry.icon}
-							<span class="canvas-tree-ctx-menu-icon">{entry.icon}</span>
+						{#if r.icon}
+							<span class="canvas-tree-ctx-menu-icon">{r.icon}</span>
 						{/if}
-						<span class="canvas-tree-ctx-menu-label">{entry.label}</span>
-						{#if entry.shortcut}
-							<span class="canvas-tree-ctx-menu-shortcut">{entry.shortcut}</span>
+						<span class="canvas-tree-ctx-menu-label">{r.text}</span>
+						{#if r.shortcut}
+							<span class="canvas-tree-ctx-menu-shortcut">{r.shortcut}</span>
 						{/if}
-						{#if hasChildren}
+						{#if entry.hasChildren}
 							<span class="canvas-tree-ctx-menu-arrow">&#x25B8;</span>
 						{/if}
 					</button>
-					{#if hasChildren}
+					{#if entry.hasChildren}
 						<div class="canvas-tree-ctx-submenu" role="menu">
-							{@render renderCanvasEntries(entry.children!, closeFn)}
+							{#await getMenuChildren(item, menuCtx) then children}
+								{@render renderMenuLevel(children, menuCtx, closeFn)}
+							{/await}
 						</div>
 					{/if}
 					</div>
@@ -2383,18 +2541,18 @@
 			{/each}
 		{/snippet}
 
-		{#if ctrl.contextMenuVisible && ctrl.contextMenuNode}
-			{@const menuEntries = ctrl.getContextMenuItemsHandler?.(ctrl.contextMenuNode, ctrl.closeContextMenu.bind(ctrl)) || []}
-			{@const _log = console.debug(`[CanvasTree] Rendering context menu: node=${ctrl.contextMenuNode.path}, entries=${menuEntries.length}, pos=${ctrl.contextMenuX},${ctrl.contextMenuY}`)}
+		{#if ctrl.contextMenuVisible && ctrl.contextMenuNode && getNodeContextMenuItemsHandler}
+			{@const nodeCtx = nodeMenuContext(ctrl, ctrl.contextMenuNode as LTreeNode<T>)}
+			{@const menuEntries = getNodeContextMenuItemsHandler(nodeCtx)}
 			<div class="canvas-tree-ctx-menu" style="position: fixed; left: {ctrl.contextMenuX}px; top: {ctrl.contextMenuY}px; z-index: 10000;" role="menu">
 				<div class="canvas-tree-ctx-menu-header">{getLabel(ctrl.contextMenuNode as LTreeNode<T>)}</div>
-				{@render renderCanvasEntries(menuEntries, ctrl.closeContextMenu.bind(ctrl))}
+				{@render renderMenuLevel(menuEntries, nodeCtx, ctrl.closeContextMenu.bind(ctrl))}
 			</div>
 		{/if}
 
-		{#if canvasMenuVisible && canvasMenuEntries.length > 0}
+		{#if canvasMenuVisible && canvasMenuEntries.length > 0 && canvasMenuCtx}
 			<div class="canvas-tree-ctx-menu" style="position: fixed; left: {canvasMenuX}px; top: {canvasMenuY}px;" role="menu">
-				{@render renderCanvasEntries(canvasMenuEntries, () => { canvasMenuVisible = false; })}
+				{@render renderMenuLevel(canvasMenuEntries, canvasMenuCtx, () => { canvasMenuVisible = false; })}
 			</div>
 		{/if}
 	{/snippet}

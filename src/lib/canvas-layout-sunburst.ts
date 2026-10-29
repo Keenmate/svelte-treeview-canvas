@@ -351,7 +351,7 @@ export function drawSunburstNodes<T>(
 	getDepthColor: (depth: number) => string,
 	getLabel: (node: LTreeNode<T>, ln?: LayoutNode<T>) => string,
 	hoveredNode: LayoutNode<T> | null,
-	selectedPath: string | null,
+	focusedPath: string | null,
 	fontStr: string,
 	zoom: number,
 	vl: number, vt: number, vr: number, vb: number,
@@ -391,7 +391,7 @@ export function drawSunburstNodes<T>(
 
 		const depth = ln.depth;
 		const baseColor = getDepthColor(depth);
-		const isSelected = ln.node.path === selectedPath;
+		const isSelected = ln.node.path === focusedPath;
 		const isHovered = hoveredNode?.node.path === ln.node.path;
 		const isAncestor = hoveredAncestors.has(ln.node.path);
 		const isDimmed = hoveredNode !== null && !isAncestor;

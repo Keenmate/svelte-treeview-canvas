@@ -30,24 +30,29 @@
 		{ id: 8, path: '2.1', parentPath: '2', name: 'Software', hasChildren: false }
 	];
 
-	function sortByName(items: LTreeNode<Item>[]) {
-		return [...items].sort((a, b) => (a.data?.name || '').localeCompare(b.data?.name || ''));
+	function sortByName({ nodes }: { nodes: LTreeNode<Item>[] }) {
+		return [...nodes].sort((a, b) => (a.data?.name || '').localeCompare(b.data?.name || ''));
 	}
 
 	let canvasTreeRef = $state<CanvasTree<Item> | null>(null);
 	let ctrlRef = $state<TreeController<Item> | null>(null);
 	let clickBehavior = $state<ClickBehavior>('select');
-	let selectedPath = $state<string | null>(null);
+	let focusedPath = $state<string | null>(null);
 	let selectedPaths = $state<Set<string>>(new Set());
 	let visibleCount = $state(0);
+	let nodes = $state<Item[]>(sampleData);
+	let expandedPaths = $state<Set<string>>(new Set());
+	let lastClick = $state('(none)');
+	let selectionEvents = $state(0);
+	const expandedList = $derived([...expandedPaths].sort());
 	let totalCount = $state(0);
 
 	// Display the CONTROLLER'S state (source of truth) so both canvas clicks AND
 	// programmatic ops (toolbar buttons) reflect immediately — the bound
-	// selectedPath/selectedPaths props only update inside CanvasTree's own click
+	// focusedPath/selectedPaths props only update inside CanvasTree's own click
 	// handlers, not on external controller mutations.
 	let focusedDisplay = $derived(ctrlRef?.focusedNode?.path ?? '(none)');
-	let highlightList = $derived(ctrlRef ? [...ctrlRef.highlightedPaths].sort() : []);
+	let selectedList = $derived(ctrlRef ? [...ctrlRef.selectedPaths].sort() : []);
 
 	// Expose a live screen-rect getter for coordinate-based canvas clicks in e2e.
 	$effect(() => {
@@ -73,14 +78,20 @@
 	<button onclick={() => canvasTreeRef?.expandAll()}>Expand All</button>
 	<button onclick={() => canvasTreeRef?.collapseAll()}>Collapse All</button>
 	<button onclick={() => canvasTreeRef?.zoomToFit()}>Fit</button>
-	<button onclick={() => ctrlRef?.clearHighlight()}>Clear Selection</button>
+	<button onclick={() => ctrlRef?.clearSelection()}>Clear Selection</button>
+	<button onclick={() => ctrlRef?.removeBranch('2.1')}>Remove 2.1</button>
+	<button onclick={() => { expandedPaths = new Set(['2']); }}>Expand only 2</button>
+	<button onclick={() => canvasTreeRef?.toggleNodeExpanded('2')}>Toggle 2</button>
 </div>
 
 <div class="canvas-host" data-testid="canvas-host">
 	<CanvasTree
 		bind:this={canvasTreeRef}
 		bind:controller={ctrlRef}
-		data={sampleData}
+		bind:nodes
+		bind:expandedPaths
+		onNodeClick={(ctx) => { lastClick = `${ctx.path}:${ctx.node?.data?.name}:${!!ctx.controller}`; }}
+		onSelectionChange={(ctx) => { selectionEvents++; }}
 		idMember="id"
 		pathMember="path"
 		parentPathMember="parentPath"
@@ -89,7 +100,7 @@
 		isSorted={true}
 		expandLevel={2}
 		bind:clickBehavior
-		bind:selectedPath
+		bind:focusedPath
 		bind:selectedPaths
 		bind:visibleCount
 		bind:totalCount
@@ -103,12 +114,28 @@
 		<pre data-testid="focused-path">{focusedDisplay}</pre>
 	</div>
 	<div class="output">
-		<p class="output-label">Highlighted</p>
-		<pre data-testid="highlighted-paths">{highlightList.length > 0 ? highlightList.join(', ') : '(none)'}</pre>
+		<p class="output-label">Selected</p>
+		<pre data-testid="selected-paths">{selectedList.length > 0 ? selectedList.join(', ') : '(none)'}</pre>
 	</div>
 	<div class="output">
-		<p class="output-label">Highlighted Count</p>
-		<pre data-testid="highlighted-count">{highlightList.length}</pre>
+		<p class="output-label">Selected Count</p>
+		<pre data-testid="selected-count">{selectedList.length}</pre>
+	</div>
+	<div class="output">
+		<p class="output-label">Node count (bind:nodes)</p>
+		<pre data-testid="node-count">{nodes.length}</pre>
+	</div>
+	<div class="output">
+		<p class="output-label">Expanded (bind:expandedPaths)</p>
+		<pre data-testid="expanded-paths">{expandedList.join(', ') || '(none)'}</pre>
+	</div>
+	<div class="output">
+		<p class="output-label">Last click (onNodeClick ctx)</p>
+		<pre data-testid="last-click">{lastClick}</pre>
+	</div>
+	<div class="output">
+		<p class="output-label">onSelectionChange events</p>
+		<pre data-testid="selection-events">{selectionEvents}</pre>
 	</div>
 	<div class="output">
 		<p class="output-label">Visible / Total</p>

@@ -420,9 +420,9 @@
 		selectedNode = null;
 	}
 
-	function sortCallback(items: LTreeNode<any>[]) {
-		if (!sortMember) return items;
-		return [...items].sort((a, b) => {
+	function sortCallback({ nodes }: { nodes: LTreeNode<any>[] }) {
+		if (!sortMember) return nodes;
+		return [...nodes].sort((a, b) => {
 			const aVal = a.data?.[sortMember] ?? '';
 			const bVal = b.data?.[sortMember] ?? '';
 			return String(aVal).localeCompare(String(bVal));
@@ -1964,7 +1964,7 @@
 					{#key treeKey}
 						<Tree
 							bind:this={treeRef}
-							data={jsonData}
+							nodes={jsonData}
 							{idMember}
 							{pathMember}
 							parentPathMember={parentPathMember || null}
@@ -1977,7 +1977,7 @@
 							{isSorted}
 							{expandLevel}
 							isFlatRenderingEnabled={useFlatRendering}
-							isProgressiveRender={progressiveRender}
+							isProgressiveRenderEnabled={progressiveRender}
 							{initialBatchSize}
 							{maxBatchSize}
 							shouldUseInternalSearchIndex={true}
@@ -2025,7 +2025,7 @@
 
 				{#key treeKey}
 					<TreeProvider
-						data={jsonData}
+						nodes={jsonData}
 						{idMember}
 						{pathMember}
 						parentPathMember={parentPathMember || null}
@@ -2084,7 +2084,7 @@
 					<div class="canvas-wrapper">
 						<CanvasTree
 							bind:this={sunburstRef}
-							data={jsonData}
+							nodes={jsonData}
 							{idMember}
 							{pathMember}
 							parentPathMember={parentPathMember || undefined}
@@ -2102,8 +2102,8 @@
 							layoutMode="sunburst"
 							{sunburstRingWidth}
 							dragDropMode="none"
-							getIsCollapsibleCallback={(node) => (node.level ?? 0) >= 3}
-							bind:selectedPath={sunburstSelectedPath}
+							getIsCollapsibleCallback={({ node }) => (node.level ?? 0) >= 3}
+							bind:focusedPath={sunburstSelectedPath}
 							bind:layoutTime={sunburstLayoutTime}
 							bind:drawTime={sunburstDrawTime}
 							bind:visibleCount={sunburstVisibleCount}
@@ -2151,7 +2151,7 @@
 			{:else if renderer === 'flat'}
 				{#key treeKey}
 					<TreeProvider
-						data={jsonData}
+						nodes={jsonData}
 						{idMember}
 						{pathMember}
 						parentPathMember={parentPathMember || null}
@@ -2174,8 +2174,8 @@
 										onclick={() => { flatSelectedPath = node.path; }}
 									>
 										<span class="flat-card-name">
-											{#if displayMember && node.data?.[displayMember]}
-												{node.data[displayMember]}
+											{#if displayMember && (node.data as Record<string, unknown> | undefined)?.[displayMember]}
+												{(node.data as Record<string, unknown>)[displayMember]}
 											{:else}
 												{node.path}
 											{/if}

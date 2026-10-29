@@ -1,6 +1,8 @@
 <script lang="ts">
+	import type { CanvasMenuContext } from '$lib/types.js';
 	import { CanvasTree } from '$lib/index.js';
-	import type { TreeController, LTreeNode, ContextMenuEntry } from '@keenmate/svelte-treeview';
+	import type { TreeController, LTreeNode, TreeMenuEntry, TreeMenuContext, MenuEntry } from '@keenmate/svelte-treeview';
+	import { menuDivider } from '@keenmate/svelte-treeview';
 
 	/**
 	 * Minimal e2e fixture for the canvas context menu. The menu renders as REAL DOM
@@ -26,34 +28,37 @@
 		{ id: 4, path: '2', parentPath: '', name: 'Downloads', hasChildren: false }
 	];
 
-	function sortByName(items: LTreeNode<Item>[]) {
-		return [...items].sort((a, b) => (a.data?.name || '').localeCompare(b.data?.name || ''));
+	function sortByName({ nodes }: { nodes: LTreeNode<Item>[] }) {
+		return [...nodes].sort((a, b) => (a.data?.name || '').localeCompare(b.data?.name || ''));
 	}
 
 	let canvasTreeRef = $state<CanvasTree<Item> | null>(null);
 	let ctrlRef = $state<TreeController<Item> | null>(null);
 	let lastAction = $state('(none)');
+	let visibleCount = $state(0);
 
-	function getContextMenu(node: LTreeNode<Item>): ContextMenuEntry[] {
+	function getContextMenu({ node }: TreeMenuContext<Item>): TreeMenuEntry<Item>[] {
 		const name = node.data?.name ?? node.path;
 		return [
-			{ id: 'rename', icon: '✏️', label: 'Rename', onclick: () => { lastAction = `rename:${name}`; } },
-			{ id: 'duplicate', icon: '📄', label: 'Duplicate', onclick: () => { lastAction = `duplicate:${name}`; } },
-			{ divider: true, label: 'Danger zone' },
+			{ id: 'rename', icon: '✏️', text: 'Rename', onClick: () => { lastAction = `rename:${name}`; } },
+			{ id: 'duplicate', icon: '📄', text: 'Duplicate', onClick: () => { lastAction = `duplicate:${name}`; } },
+			{ divider: true, text: 'Danger zone' },
 			{
 				id: 'delete',
 				icon: '🗑️',
-				label: 'Delete',
-				className: 'danger',
-				onclick: () => { lastAction = `delete:${name}`; }
-			}
+				text: 'Delete',
+				isDanger: true,
+				onClick: () => { lastAction = `delete:${name}`; }
+			},
+			menuDivider('Built-in'),
+			'collapse-subtree'
 		];
 	}
 
-	function getCanvasContextMenu(): ContextMenuEntry[] {
+	function getCanvasContextMenu(): MenuEntry<CanvasMenuContext<Item>>[] {
 		return [
-			{ id: 'expand-all', label: 'Expand All', onclick: () => { lastAction = 'canvas:expand-all'; } },
-			{ id: 'collapse-all', label: 'Collapse All', onclick: () => { lastAction = 'canvas:collapse-all'; } }
+			{ id: 'expand-all', text: 'Expand All', onClick: () => { lastAction = 'canvas:expand-all'; } },
+			{ id: 'collapse-all', text: 'Collapse All', onClick: () => { lastAction = 'canvas:collapse-all'; } }
 		];
 	}
 
@@ -72,7 +77,7 @@
 	<CanvasTree
 		bind:this={canvasTreeRef}
 		bind:controller={ctrlRef}
-		data={sampleData}
+		nodes={sampleData}
 		idMember="id"
 		pathMember="path"
 		parentPathMember="parentPath"
@@ -83,12 +88,18 @@
 		getNodeLabelCallback={(node) => node.data?.name || node.path}
 		getNodeContextMenuItemsCallback={getContextMenu}
 		getCanvasContextMenuItemsCallback={getCanvasContextMenu}
+		bind:visibleCount
+		onAction={(d) => { if (d.action !== 'custom') lastAction = `action:${d.action}:${d.path}`; }}
 	/>
 </div>
 
 <div class="output">
 	<p class="output-label">Last Action</p>
 	<pre data-testid="last-action">{lastAction}</pre>
+</div>
+<div class="output">
+	<p class="output-label">Visible</p>
+	<pre data-testid="visible-count">{visibleCount}</pre>
 </div>
 
 <style>
