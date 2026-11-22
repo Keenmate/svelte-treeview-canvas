@@ -24,7 +24,6 @@
 		sortMember: 'name',
 		expandLevel: 2,
 		isSorted: true,
-		useFlatRendering: true,
 		progressiveRender: true,
 		initialBatchSize: 20,
 		maxBatchSize: 500,
@@ -48,7 +47,6 @@
 	let isSorted = $state(defaultConfig.isSorted);
 
 	// Configuration state - Performance
-	let useFlatRendering = $state(defaultConfig.useFlatRendering);
 	let progressiveRender = $state(defaultConfig.progressiveRender);
 	let initialBatchSize = $state(defaultConfig.initialBatchSize);
 	let maxBatchSize = $state(defaultConfig.maxBatchSize);
@@ -205,7 +203,6 @@
 				sortMember = config.sortMember ?? defaultConfig.sortMember;
 				expandLevel = config.expandLevel ?? defaultConfig.expandLevel;
 				isSorted = config.isSorted ?? defaultConfig.isSorted;
-				useFlatRendering = config.useFlatRendering ?? defaultConfig.useFlatRendering;
 				progressiveRender = config.progressiveRender ?? defaultConfig.progressiveRender;
 				initialBatchSize = config.initialBatchSize ?? defaultConfig.initialBatchSize;
 				maxBatchSize = config.maxBatchSize ?? defaultConfig.maxBatchSize;
@@ -238,7 +235,7 @@
 				idMember, pathMember, parentPathMember, levelMember,
 				hasChildrenMember, isExpandedMember, orderMember, treePathSeparator,
 				displayMember, sortMember, expandLevel, isSorted,
-				useFlatRendering, progressiveRender, initialBatchSize, maxBatchSize,
+				progressiveRender, initialBatchSize, maxBatchSize,
 				renderer, canvasColumnGap, canvasGridNodeMaxW,
 				canvasNodeHeight, canvasNodeGap, canvasLevelSpacingV,
 				canvasNodePaddingX, canvasNodeMinWidth, canvasColorBarW,
@@ -266,7 +263,6 @@
 		sortMember = defaultConfig.sortMember;
 		expandLevel = defaultConfig.expandLevel;
 		isSorted = defaultConfig.isSorted;
-		useFlatRendering = defaultConfig.useFlatRendering;
 		progressiveRender = defaultConfig.progressiveRender;
 		initialBatchSize = defaultConfig.initialBatchSize;
 		maxBatchSize = defaultConfig.maxBatchSize;
@@ -301,7 +297,7 @@
 		// Touch all config values to track them
 		void [idMember, pathMember, parentPathMember, levelMember, hasChildrenMember,
 			isExpandedMember, orderMember, treePathSeparator, displayMember, sortMember,
-			expandLevel, isSorted, useFlatRendering, progressiveRender, initialBatchSize, maxBatchSize,
+			expandLevel, isSorted, progressiveRender, initialBatchSize, maxBatchSize,
 			renderer, canvasColumnGap, canvasGridNodeMaxW,
 			canvasNodeHeight, canvasNodeGap, canvasLevelSpacingV,
 			canvasNodePaddingX, canvasNodeMinWidth, canvasColorBarW,
@@ -1644,13 +1640,6 @@
 			<div class="config-grid">
 				<div class="form-group">
 					<label class="checkbox-label">
-						<input type="checkbox" bind:checked={useFlatRendering} />
-						Use Flat Rendering
-					</label>
-				</div>
-
-				<div class="form-group">
-					<label class="checkbox-label">
 						<input type="checkbox" bind:checked={progressiveRender} />
 						Progressive Render
 					</label>
@@ -1976,7 +1965,6 @@
 							{sortCallback}
 							{isSorted}
 							{expandLevel}
-							isFlatRenderingEnabled={useFlatRendering}
 							isProgressiveRenderEnabled={progressiveRender}
 							{initialBatchSize}
 							{maxBatchSize}
