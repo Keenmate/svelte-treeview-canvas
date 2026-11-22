@@ -1,6 +1,6 @@
 /**
  * Context-menu model of the canvas — the same entries as svelte-treeview's `<Tree>`
- * (`TreeMenuEntry`: action items, `menuDivider()`, built-in action names), rendered by
+ * (`TreeMenuEntry`: action items, `createMenuDivider()`, built-in action names), rendered by
  * CanvasTree's own menu markup over svelte-treeview's public custom-renderer API
  * (`controller.menuContext` / `menuItemDefaults` / `activateMenuItem`, `resolveMenuEntries`,
  * `getMenuChildren` — svelte-treeview 5.0.0-rc16).

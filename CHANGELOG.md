@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — keyboard-navigation names follow `@keenmate/svelte-treeview` 5.0.0-rc18 (2026-11-22)
+
+The canvas spatial navigation implements the renamed `TreeNavigation` interface (`navigationOverrides` keys
+change with it): `navTo` → `focusAndSelectNode`, `navNext` / `navPrev` → `focusNext` / `focusPrevious`,
+`navNextSibling` / `navPrevSibling` → `focusNextAtLevel` / `focusPreviousAtLevel`, `navInto` → `focusFirstChild`,
+`navOut` → `focusParent`, `navBackOut` → `collapseParent`, `navToggle` → `toggleFocusedNodeExpanded`,
+`navFirst` / `navLast` → `focusFirst` / `focusLast`, `navPageDown` / `navPageUp` → `focusNextPage` /
+`focusPreviousPage`, `navSelect*` → `extendSelectionNext` / `extendSelectionPrevious` / `extendSelectionToFirst` /
+`extendSelectionToLast` / `extendSelectionNextPage` / `extendSelectionPreviousPage`. Behaviour unchanged.
+
+- **`menuDivider` → `createMenuDivider`** (svelte-treeview 5.0.0-rc17 renamed it): the canvas re-export in
+  `src/lib/index.ts` still named `menuDivider`, so the package failed to load against svelte-treeview rc17.
+
 ### Changed — BREAKING (follows `@keenmate/svelte-treeview` 5.0.0-rc16)
 
 Requires `@keenmate/svelte-treeview` 5.0.0-rc16. The canvas takes over the tree's renamed vocabulary

@@ -31,4 +31,4 @@ export type {
     TreeMenuContext, TreeMenuItem, TreeMenuEntry, TreeAction, TreeActionEventDetail, MenuEntry, MenuDivider,
     TreeNavigation, TreeNavigationOverrides
 } from "@keenmate/svelte-treeview"
-export { TreeController, menuDivider } from "@keenmate/svelte-treeview"
+export { TreeController, createMenuDivider } from "@keenmate/svelte-treeview"

@@ -15,7 +15,7 @@ Breaking — the same vocabulary as svelte-treeview / web-treeview (see CHANGELO
   `onNodeDrop({ source, target, position, controller })`, `sortCallback({ nodes })`, `get*Callback({ node })`,
   `transformDataForPaste({ data, … })`; `onPaste` → `onNodePaste`.
 - **Context menus use the core action-item model**: `{ text, icon, onClick(detail), isDanger, isToggled, children }`,
-  `menuDivider(text?)` and built-in action names (`'copy'`, `'paste'`, `'delete'`, `'expand-subtree'`, `'sort'`…);
+  `createMenuDivider(text?)` and built-in action names (`'copy'`, `'paste'`, `'delete'`, `'expand-subtree'`, `'sort'`…);
   `beforeActionCallback` / `onAction`. Menu callbacks take one ctx (`TreeMenuContext`).
 - **Expand family**: `ExpandOptions { isExclusive, isSilent }`, `toggleNodeExpanded`, `bind:expandedPaths`,
   `onNodeExpand` / `onNodeCollapse` / `onExpandedChange` / `beforeExpandCallback`.
@@ -126,24 +126,24 @@ Key CSS variables: `--base-primary-color`, `--base-main-bg`, `--base-elevated-bg
 
 ## Context Menu
 
-The same entry model as svelte-treeview's `<Tree>` (core action items): items, `menuDivider(text?)`
+The same entry model as svelte-treeview's `<Tree>` (core action items): items, `createMenuDivider(text?)`
 and built-in action names (texts from `labels`; they act on the selection when the node is in it).
 
 ```typescript
-import { menuDivider } from '@keenmate/svelte-treeview';
+import { createMenuDivider } from '@keenmate/svelte-treeview';
 import type { TreeMenuContext, TreeMenuEntry } from '@keenmate/svelte-treeview';
 
 function getContextMenu({ node, controller }: TreeMenuContext<Item>): TreeMenuEntry<Item>[] {
   return [
     { icon: '👤', text: 'View', shortcut: 'V', onClick: () => view(node) },
-    menuDivider('Actions'),
+    createMenuDivider('Actions'),
     { icon: '✏️', text: 'Edit', isDisabled: node.data.readonly, onClick: () => edit(node) },
     { icon: '📋', text: 'Copy...', children: [
       { text: 'Name', onClick: () => copyName(node) },
       { text: 'Email', onClick: () => copyEmail(node) },
     ]},
     'cut', 'paste', 'expand-subtree',          // built-in actions
-    menuDivider('Danger zone'),
+    createMenuDivider('Danger zone'),
     { icon: '🗑️', text: 'Delete', isDanger: true, onClick: () => del(node) },
   ];
 }

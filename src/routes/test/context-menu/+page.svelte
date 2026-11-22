@@ -2,7 +2,7 @@
 	import type { CanvasMenuContext } from '$lib/types.js';
 	import { CanvasTree } from '$lib/index.js';
 	import type { TreeController, LTreeNode, TreeMenuEntry, TreeMenuContext, MenuEntry, TreeAction } from '@keenmate/svelte-treeview';
-	import { menuDivider } from '@keenmate/svelte-treeview';
+	import { createMenuDivider } from '@keenmate/svelte-treeview';
 
 	/**
 	 * Minimal e2e fixture for the canvas context menu. The menu renders as REAL DOM
@@ -50,7 +50,7 @@
 				isDanger: true,
 				onClick: () => { lastAction = `delete:${name}`; }
 			},
-			menuDivider('Built-in'),
+			createMenuDivider('Built-in'),
 			'collapse-subtree'
 		];
 	}
@@ -60,7 +60,7 @@
 			{ id: 'expand-all', text: 'Expand All', onClick: () => { lastAction = 'canvas:expand-all'; } },
 			{ id: 'collapse-all', text: 'Collapse All', onClick: () => { lastAction = 'canvas:collapse-all'; } },
 			// Built-ins on the node-less menu: node-free ones run, node-bound ones are disabled.
-			menuDivider('Built-in'),
+			createMenuDivider('Built-in'),
 			'collapse-all',
 			'delete'
 		];

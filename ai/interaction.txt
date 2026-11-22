@@ -100,7 +100,7 @@ CONTEXT MENUS
 The same entry model as svelte-treeview's <Tree> (core action items). An entry is an item
 { id?, text, icon?, tooltip?, shortcut?, isDisabled?, isVisible?, isDanger?, isToggled?, cssClass?,
   get*Callback(ctx)?, onClick?(detail), children?, getChildrenCallback?(ctx), shouldCloseOnClick? },
-a divider (menuDivider(text?)) or a built-in action name:
+a divider (createMenuDivider(text?)) or a built-in action name:
   'copy' 'cut' 'paste' 'delete' 'expand' 'collapse' 'expand-subtree' 'collapse-subtree'
   'expand-all' 'collapse-all' 'sort' 'sort-subtree' 'sort-all'
 Built-ins take their text from `labels` and act on the selection when the node is in it, else on
@@ -121,7 +121,7 @@ the node. Activation order: beforeActionCallback (false cancels) → item onClic
    node-free built-ins apply: 'paste' (into the root), 'expand-all', 'collapse-all', 'sort-all'
    (node-bound ones show disabled)
 
-import { menuDivider } from '@keenmate/svelte-treeview';
+import { createMenuDivider } from '@keenmate/svelte-treeview';
 
 <CanvasTree
   getNodeContextMenuItemsCallback={({ node, controller }) => {
@@ -129,10 +129,10 @@ import { menuDivider } from '@keenmate/svelte-treeview';
     return [
       { text: 'Edit', shortcut: 'F2', onClick: () => editNode(node) },
       'copy', 'cut', 'paste',
-      menuDivider(),
+      createMenuDivider(),
       { text: 'Delete', isDanger: true, onClick: () => deleteNode(node) },
       ...(selected.length > 1 ? [
-        menuDivider('Bulk'),
+        createMenuDivider('Bulk'),
         { text: `Export ${selected.length} nodes`, onClick: () => exportNodes(selected) },
       ] : []),
     ];

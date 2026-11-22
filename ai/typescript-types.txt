@@ -65,7 +65,7 @@ import type {
   TreeControllerProps,
 } from '@keenmate/svelte-treeview-canvas';
 
-import { TreeController, menuDivider } from '@keenmate/svelte-treeview-canvas';
+import { TreeController, createMenuDivider } from '@keenmate/svelte-treeview-canvas';
 
 // Canvas event / menu contexts
 import type {
@@ -203,7 +203,7 @@ interface TreeMenuItem<T> {            // core MenuItem<TreeMenuContext<T>, Tree
   shouldCloseOnClick?: boolean;        // default true
 }
 
-interface MenuDivider { divider: true; text?: string; }   // menuDivider(text?)
+interface MenuDivider { divider: true; text?: string; }   // createMenuDivider(text?)
 
 type TreeMenuEntry<T> = TreeMenuItem<T> | MenuDivider | TreeAction;
 
@@ -214,25 +214,25 @@ type TreeAction = 'copy' | 'cut' | 'paste' | 'delete' | 'expand' | 'collapse'
 NAVIGATION (from core)
 -----------------------
 interface TreeNavigation<T> {
-  navTo(path: string): void;
-  navNext(): void;
-  navPrev(): void;
-  navNextSibling(): void;
-  navPrevSibling(): void;
-  navInto(): void;
-  navOut(): void;
-  navBackOut(): void;
-  navToggle(): void;
-  navFirst(): void;
-  navLast(): void;
-  navPageDown(): void;
-  navPageUp(): void;
-  navSelectNext(): void;      // Shift+nav: extend the selection
-  navSelectPrev(): void;
-  navSelectFirst(): void;
-  navSelectLast(): void;
-  navSelectPageDown(): void;
-  navSelectPageUp(): void;
+  focusAndSelectNode(path: string): void;
+  focusNext(): void;
+  focusPrevious(): void;
+  focusNextAtLevel(): void;
+  focusPreviousAtLevel(): void;
+  focusFirstChild(): void;
+  focusParent(): void;
+  collapseParent(): void;
+  toggleFocusedNodeExpanded(): void;
+  focusFirst(): void;
+  focusLast(): void;
+  focusNextPage(): void;
+  focusPreviousPage(): void;
+  extendSelectionNext(): void;      // Shift+nav: extend the selection
+  extendSelectionPrevious(): void;
+  extendSelectionToFirst(): void;
+  extendSelectionToLast(): void;
+  extendSelectionNextPage(): void;
+  extendSelectionPreviousPage(): void;
 }
 
 type TreeNavigationOverrides<T> = Partial<TreeNavigation<T>>;

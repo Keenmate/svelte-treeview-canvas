@@ -2,7 +2,7 @@
 	import type { CanvasMenuContext } from '$lib/types.js';
 	import { CanvasTree } from '$lib/index.js';
 	import type { LTreeNode, TreeMenuEntry, TreeMenuContext, MenuEntry } from '@keenmate/svelte-treeview';
-	import { menuDivider } from '@keenmate/svelte-treeview';
+	import { createMenuDivider } from '@keenmate/svelte-treeview';
 	import type { TreeController } from '@keenmate/svelte-treeview';
 
 	// ── Types ──────────────────────────────────────────────────────────────
@@ -212,11 +212,11 @@
 	function getBuiltInMenu({ node }: TreeMenuContext<Item>): TreeMenuEntry<Item>[] {
 		return [
 			{ icon: '👤', text: 'View Profile', onClick: () => { log(`View: ${node.data?.name}`); } },
-			menuDivider('Clipboard'),
+			createMenuDivider('Clipboard'),
 			'copy', 'cut', 'paste',
-			menuDivider('Structure'),
+			createMenuDivider('Structure'),
 			'expand-subtree', 'collapse-subtree', 'sort',
-			menuDivider(),
+			createMenuDivider(),
 			'delete',
 		];
 	}
@@ -359,7 +359,7 @@
 		<div class="code-block">
 			<pre>{`// Types (from @keenmate/svelte-treeview — the core action-item model, same as <Tree>)
 
-// One entry: an item, a divider (menuDivider(text?)) or a built-in action name
+// One entry: an item, a divider (createMenuDivider(text?)) or a built-in action name
 type TreeMenuEntry<T> = TreeMenuItem<T> | MenuDivider | TreeAction;
 
 interface TreeMenuItem<T> {
@@ -404,7 +404,7 @@ function getContextMenu({ node }: TreeMenuContext<Item>): TreeMenuEntry<Item>[] 
       { text: 'Name', onClick: () => copyName(node) },
       { text: 'Email', onClick: () => copyEmail(node) },
     ]},
-    menuDivider('Danger zone'),
+    createMenuDivider('Danger zone'),
     { icon: '🗑️', text: 'Delete', isDanger: true, onClick: () => del(node) },
     'cut', 'paste',   // built-in actions
   ];

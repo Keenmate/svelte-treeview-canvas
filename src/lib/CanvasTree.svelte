@@ -1076,15 +1076,15 @@
 
 	function createCanvasNavigation(defaultNav: TreeNavigation<T>): TreeNavigation<T> {
 		const nav: TreeNavigation<T> = {
-			navTo(path: string) {
+			focusAndSelectNode(path: string) {
 				navigateToPath(path);
 			},
 
 			// Next / previous visible node in tree order (the controller's default navigation)
-			navNext() { defaultNav.navNext(); },
-			navPrev() { defaultNav.navPrev(); },
+			focusNext() { defaultNav.focusNext(); },
+			focusPrevious() { defaultNav.focusPrevious(); },
 
-			navNextSibling() {
+			focusNextAtLevel() {
 				if (!ctrlRef || !focusedPath) return;
 				const currentLn = layoutNodes.find(ln => ln.node.path === focusedPath);
 				if (!currentLn) return;
@@ -1122,7 +1122,7 @@
 				if (neighbor) navigateToPath(neighbor.node.path);
 			},
 
-			navPrevSibling() {
+			focusPreviousAtLevel() {
 				if (!ctrlRef || !focusedPath) return;
 				const currentLn = layoutNodes.find(ln => ln.node.path === focusedPath);
 				if (!currentLn) return;
@@ -1160,7 +1160,7 @@
 				if (neighbor) navigateToPath(neighbor.node.path);
 			},
 
-			navInto() {
+			focusFirstChild() {
 				if (!ctrlRef || !focusedPath) return;
 				const node = ctrlRef.getNodeByPath(focusedPath);
 				if (!node) return;
@@ -1210,7 +1210,7 @@
 				}
 			},
 
-			navOut() {
+			focusParent() {
 				if (!ctrlRef || !focusedPath) return;
 				const node = ctrlRef.getNodeByPath(focusedPath);
 				if (!node || !node.parentPath) return;
@@ -1241,7 +1241,7 @@
 				navigateToPath(node.parentPath);
 			},
 
-			navBackOut() {
+			collapseParent() {
 				if (!ctrlRef || !focusedPath) return;
 				const node = ctrlRef.getNodeByPath(focusedPath);
 				if (!node || !node.parentPath) return;
@@ -1251,7 +1251,7 @@
 				recomputeAndDraw();
 			},
 
-			navToggle() {
+			toggleFocusedNodeExpanded() {
 				if (!ctrlRef || !focusedPath) return;
 				const node = ctrlRef.getNodeByPath(focusedPath);
 				if (!node || !node.hasChildren) return;
@@ -1259,7 +1259,7 @@
 				recomputeAndDraw();
 			},
 
-			navFirst() {
+			focusFirst() {
 				if (!ctrlRef) return;
 				// Navigate to first node (shallowest depth, closest to origin)
 				if (layoutNodes.length === 0) return;
@@ -1271,7 +1271,7 @@
 				}
 			},
 
-			navLast() {
+			focusLast() {
 				if (!ctrlRef) return;
 				if (layoutNodes.length === 0) return;
 				// Navigate to last visible leaf (furthest from root in layout)
@@ -1287,14 +1287,14 @@
 			// Shift+nav: delegate to controller's default range-select logic for now
 			// (the controller's own default navigation — NOT ctrlRef.nav*(), which dispatches
 			// back into this object and would recurse)
-			navPageDown() { defaultNav.navPageDown(); },
-			navPageUp() { defaultNav.navPageUp(); },
-			navSelectNext() { defaultNav.navSelectNext(); },
-			navSelectPrev() { defaultNav.navSelectPrev(); },
-			navSelectFirst() { defaultNav.navSelectFirst(); },
-			navSelectLast() { defaultNav.navSelectLast(); },
-			navSelectPageDown() { defaultNav.navSelectPageDown(); },
-			navSelectPageUp() { defaultNav.navSelectPageUp(); }
+			focusNextPage() { defaultNav.focusNextPage(); },
+			focusPreviousPage() { defaultNav.focusPreviousPage(); },
+			extendSelectionNext() { defaultNav.extendSelectionNext(); },
+			extendSelectionPrevious() { defaultNav.extendSelectionPrevious(); },
+			extendSelectionToFirst() { defaultNav.extendSelectionToFirst(); },
+			extendSelectionToLast() { defaultNav.extendSelectionToLast(); },
+			extendSelectionNextPage() { defaultNav.extendSelectionNextPage(); },
+			extendSelectionPreviousPage() { defaultNav.extendSelectionPreviousPage(); }
 		};
 
 		return nav;
@@ -1683,36 +1683,36 @@
 		// Enter/Space: toggle expand/collapse
 		if (e.key === 'Enter' || e.key === ' ') {
 			e.preventDefault();
-			ctrlRef.navToggle();
+			ctrlRef.toggleFocusedNodeExpanded();
 			return;
 		}
 		// Home: select first node (Shift: extend selection)
 		if (e.key === 'Home') {
 			e.preventDefault();
-			e.shiftKey ? ctrlRef.navSelectFirst() : ctrlRef.navFirst();
+			e.shiftKey ? ctrlRef.extendSelectionToFirst() : ctrlRef.focusFirst();
 			return;
 		}
 		// End: select last node (Shift: extend selection)
 		if (e.key === 'End') {
 			e.preventDefault();
-			e.shiftKey ? ctrlRef.navSelectLast() : ctrlRef.navLast();
+			e.shiftKey ? ctrlRef.extendSelectionToLast() : ctrlRef.focusLast();
 			return;
 		}
 		// PageDown/PageUp (Shift: extend selection)
 		if (e.key === 'PageDown') {
 			e.preventDefault();
-			e.shiftKey ? ctrlRef.navSelectPageDown() : ctrlRef.navPageDown();
+			e.shiftKey ? ctrlRef.extendSelectionNextPage() : ctrlRef.focusNextPage();
 			return;
 		}
 		if (e.key === 'PageUp') {
 			e.preventDefault();
-			e.shiftKey ? ctrlRef.navSelectPageUp() : ctrlRef.navPageUp();
+			e.shiftKey ? ctrlRef.extendSelectionPreviousPage() : ctrlRef.focusPreviousPage();
 			return;
 		}
 		// Backspace: collapse parent + select it
 		if (e.key === 'Backspace') {
 			e.preventDefault();
-			ctrlRef.navBackOut();
+			ctrlRef.collapseParent();
 			return;
 		}
 
@@ -1767,7 +1767,7 @@
 				// Root: only spine forward enters children
 				if (e.key === spineForwardKey) {
 					e.preventDefault();
-					ctrlRef.navInto();
+					ctrlRef.focusFirstChild();
 				}
 				return;
 			}
@@ -1776,8 +1776,8 @@
 				// Spine node: spine keys = cross siblings, branch keys = enter/cross children
 				if (e.key === spineForwardKey || e.key === spineBackKey) {
 					e.preventDefault();
-					if (e.key === spineBackKey) ctrlRef.navNextSibling();
-					else ctrlRef.navPrevSibling();
+					if (e.key === spineBackKey) ctrlRef.focusNextAtLevel();
+					else ctrlRef.focusPreviousAtLevel();
 				} else if (e.key === branchKey1 || e.key === branchKey2) {
 					e.preventDefault();
 					// Enter branch children in pressed direction, or cross to other side
@@ -1826,8 +1826,8 @@
 			// Branch node (depth 2+): spine keys = cross siblings, branch keys = parent/child/cross
 			if (e.key === spineForwardKey || e.key === spineBackKey) {
 				e.preventDefault();
-				if (e.key === spineBackKey) ctrlRef.navNextSibling();
-				else ctrlRef.navPrevSibling();
+				if (e.key === spineBackKey) ctrlRef.focusNextAtLevel();
+				else ctrlRef.focusPreviousAtLevel();
 			} else if (e.key === branchKey1 || e.key === branchKey2) {
 				e.preventDefault();
 				const wantBefore = e.key === branchKey1;
@@ -1902,14 +1902,14 @@
 
 		if (e.shiftKey && (action === 'crossNext' || action === 'crossPrev')) {
 			// Shift+cross arrow: extend highlight
-			if (action === 'crossNext') ctrlRef.navSelectNext();
-			else ctrlRef.navSelectPrev();
+			if (action === 'crossNext') ctrlRef.extendSelectionNext();
+			else ctrlRef.extendSelectionPrevious();
 		} else {
 			switch (action) {
-				case 'crossNext':   ctrlRef.navNextSibling(); break;
-				case 'crossPrev':   ctrlRef.navPrevSibling(); break;
-				case 'treeForward': ctrlRef.navInto(); break;
-				case 'treeBack':    ctrlRef.navOut(); break;
+				case 'crossNext':   ctrlRef.focusNextAtLevel(); break;
+				case 'crossPrev':   ctrlRef.focusPreviousAtLevel(); break;
+				case 'treeForward': ctrlRef.focusFirstChild(); break;
+				case 'treeBack':    ctrlRef.focusParent(); break;
 			}
 		}
 	}
