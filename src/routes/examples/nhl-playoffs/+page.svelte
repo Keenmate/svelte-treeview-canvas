@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { CanvasTree } from '$lib/index.js';
-	import type { TreeController } from '@keenmate/svelte-treeview';
+	import type { TreeEngine } from '@keenmate/svelte-treeview';
 	import type { LTreeNode } from '@keenmate/svelte-treeview';
 	import type {
 		CanvasRenderContext,
@@ -317,7 +317,7 @@
 	let growthDirection: GrowthDirection = $state('left');
 	let initialViewport: 'root' | 'origin' = $state('root');
 	let focusedPath = $state<string | null>(null);
-	let ctrlRef = $state<TreeController<PlayoffGame> | null>(null);
+	let ctrlRef = $state<TreeEngine<PlayoffGame> | null>(null);
 	let canvasTreeRef: ReturnType<typeof CanvasTree> | undefined = $state();
 
 	// Metrics

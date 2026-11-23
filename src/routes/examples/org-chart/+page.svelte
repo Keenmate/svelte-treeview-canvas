@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { CanvasTree } from '$lib/index.js';
-	import type { TreeController } from '@keenmate/svelte-treeview';
+	import type { TreeEngine } from '@keenmate/svelte-treeview';
 	import type { LTreeNode } from '@keenmate/svelte-treeview';
 	import type { TreeMenuEntry, TreeMenuContext, MenuEntry } from '@keenmate/svelte-treeview';
 	import type {
@@ -253,7 +253,7 @@
 	let compactMode = $state(saved.compactMode ?? false);
 	let shouldFocusOnSelect = $state(saved.shouldFocusOnSelect ?? false);
 	let focusedPath = $state<string | null>(null);
-	let ctrlRef = $state<TreeController<Person> | null>(null);
+	let ctrlRef = $state<TreeEngine<Person> | null>(null);
 	let canvasTreeRef: ReturnType<typeof CanvasTree> | undefined = $state();
 
 	// Metrics

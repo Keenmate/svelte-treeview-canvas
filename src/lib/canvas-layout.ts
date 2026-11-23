@@ -1,5 +1,5 @@
 import type { LTreeNode } from '@keenmate/svelte-treeview';
-import type { TreeController } from '@keenmate/svelte-treeview';
+import type { TreeEngine } from '@keenmate/svelte-treeview';
 import type { LayoutNode, GroupBox, LayoutResult, LayoutConfig, LayoutModeConfig, CanvasLevelConfig, GrowthDirection, LayoutMode } from './types.js';
 import { computeLayoutBalanced } from './canvas-layout-balanced.js';
 import { computeLayoutFishbone } from './canvas-layout-fishbone.js';
@@ -22,7 +22,7 @@ export function resolveLevel<K extends keyof CanvasLevelConfig>(
 
 /** Measure the maximum node width at each depth level */
 export function measureDepthWidths<T>(
-	ctrl: TreeController<T>,
+	ctrl: TreeEngine<T>,
 	measureNodeWidth: (node: LTreeNode<T>) => number,
 	config: LayoutConfig
 ): number[] {
@@ -88,7 +88,7 @@ export function finishLayout<T>(
 // ── Layout: horizontal (left-to-right) ──────────────────────────────────
 
 function computeLayoutH<T>(
-	ctrl: TreeController<T>,
+	ctrl: TreeEngine<T>,
 	measureNodeWidth: (node: LTreeNode<T>) => number,
 	config: LayoutConfig
 ): LayoutResult<T> {
@@ -141,7 +141,7 @@ function computeLayoutH<T>(
 // ── Layout: vertical (top-to-bottom) ────────────────────────────────────
 
 function computeLayoutV<T>(
-	ctrl: TreeController<T>,
+	ctrl: TreeEngine<T>,
 	measureNodeWidth: (node: LTreeNode<T>) => number,
 	config: LayoutConfig
 ): LayoutResult<T> {
@@ -212,7 +212,7 @@ function computeLayoutV<T>(
 // ── Layout: horizontal grouped ──────────────────────────────────────────
 
 function computeLayoutGroupedH<T>(
-	ctrl: TreeController<T>,
+	ctrl: TreeEngine<T>,
 	measureNodeWidth: (node: LTreeNode<T>) => number,
 	config: LayoutConfig
 ): LayoutResult<T> {
@@ -347,7 +347,7 @@ function computeLayoutGroupedH<T>(
 // ── Layout: vertical grouped ────────────────────────────────────────────
 
 function computeLayoutGroupedV<T>(
-	ctrl: TreeController<T>,
+	ctrl: TreeEngine<T>,
 	measureNodeWidth: (node: LTreeNode<T>) => number,
 	config: LayoutConfig
 ): LayoutResult<T> {
@@ -534,7 +534,7 @@ function mirrorY<T>(result: LayoutResult<T>): void {
 
 /** Compute layout for the tree using the specified growth direction and grouping */
 export function computeLayout<T>(
-	ctrl: TreeController<T>,
+	ctrl: TreeEngine<T>,
 	growthDirection: GrowthDirection,
 	grouped: boolean,
 	measureNodeWidth: (node: LTreeNode<T>) => number,

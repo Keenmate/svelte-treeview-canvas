@@ -1,5 +1,5 @@
 import type { LTreeNode } from '@keenmate/svelte-treeview';
-import type { TreeController } from '@keenmate/svelte-treeview';
+import type { TreeEngine } from '@keenmate/svelte-treeview';
 import type { LayoutNode, GroupBox, LayoutResult, LayoutConfig } from './types.js';
 import { resolveLevel, finishLayout } from './canvas-layout.js';
 
@@ -10,7 +10,7 @@ import { resolveLevel, finishLayout } from './canvas-layout.js';
  * No connection lines — hierarchy shown by nesting + depth coloring.
  */
 export function computeLayoutBox<T>(
-	ctrl: TreeController<T>,
+	ctrl: TreeEngine<T>,
 	measureNodeWidth: (node: LTreeNode<T>) => number,
 	config: LayoutConfig
 ): LayoutResult<T> {
@@ -74,7 +74,7 @@ export function computeLayoutBox<T>(
 
 /** Layout a single treemap node and its children recursively */
 function layoutTreemapNode<T>(
-	ctrl: TreeController<T>,
+	ctrl: TreeEngine<T>,
 	node: LTreeNode<T>,
 	depth: number,
 	x: number,

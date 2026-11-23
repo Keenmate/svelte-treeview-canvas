@@ -93,7 +93,7 @@ Props:
   ...
 />
 
-Uses TreeController clipboard API internally (copyNodes, cutNodes, pasteNodes).
+Uses TreeEngine clipboard API internally (copyNodes, cutNodes, pasteNodes).
 
 CONTEXT MENUS
 --------------

@@ -3,7 +3,7 @@
 	import { CanvasTree } from '$lib/index.js';
 	import type { LTreeNode, TreeMenuEntry, TreeMenuContext, MenuEntry } from '@keenmate/svelte-treeview';
 	import { createMenuDivider } from '@keenmate/svelte-treeview';
-	import type { TreeController } from '@keenmate/svelte-treeview';
+	import type { TreeEngine } from '@keenmate/svelte-treeview';
 
 	// ── Types ──────────────────────────────────────────────────────────────
 
@@ -45,7 +45,7 @@
 
 	let treeData = $state.raw<Item[]>(sampleData);
 	let focusedPath = $state<string | null>(null);
-	let ctrlRef = $state<TreeController<Item> | null>(null);
+	let ctrlRef = $state<TreeEngine<Item> | null>(null);
 	let eventLog = $state<string[]>([]);
 
 	function sortByName({ nodes }: { nodes: LTreeNode<Item>[] }) {

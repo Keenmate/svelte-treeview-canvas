@@ -1,5 +1,5 @@
 import type { LTreeNode } from '@keenmate/svelte-treeview';
-import type { TreeController } from '@keenmate/svelte-treeview';
+import type { TreeEngine } from '@keenmate/svelte-treeview';
 import type { LayoutNode, LayoutResult, LayoutConfig, GrowthDirection } from './types.js';
 import { resolveLevel, finishLayout } from './canvas-layout.js';
 
@@ -18,7 +18,7 @@ import { resolveLevel, finishLayout } from './canvas-layout.js';
  * - Multi-root: if data has >1 level-1 node, a virtual root is created.
  */
 export function computeLayoutBalanced<T>(
-	ctrl: TreeController<T>,
+	ctrl: TreeEngine<T>,
 	_growthDirection: GrowthDirection,
 	measureNodeWidth: (node: LTreeNode<T>) => number,
 	config: LayoutConfig,
@@ -163,7 +163,7 @@ export function computeLayoutBalanced<T>(
  * For right arm: getX returns increasing X. For left arm: decreasing X.
  */
 function layoutSubtreeH<T>(
-	ctrl: TreeController<T>,
+	ctrl: TreeEngine<T>,
 	treeNode: LTreeNode<T>,
 	depth: number,
 	parent: LayoutNode<T>,
@@ -206,7 +206,7 @@ function layoutSubtreeH<T>(
 // ── Helpers ─────────────────────────────────────────────────────────
 
 function walkMaxWidths<T>(
-	ctrl: TreeController<T>,
+	ctrl: TreeEngine<T>,
 	node: LTreeNode<T>,
 	depth: number,
 	measureNodeWidth: (node: LTreeNode<T>) => number,
@@ -222,7 +222,7 @@ function walkMaxWidths<T>(
 }
 
 function splitChildren<T>(
-	ctrl: TreeController<T>,
+	ctrl: TreeEngine<T>,
 	children: LTreeNode<T>[],
 	mode: 'even' | 'weighted'
 ): [LTreeNode<T>[], LTreeNode<T>[]] {
@@ -244,7 +244,7 @@ function splitChildren<T>(
 	return [children.slice(0, midIdx), children.slice(midIdx)];
 }
 
-function countVisibleNodes<T>(ctrl: TreeController<T>, node: LTreeNode<T>): number {
+function countVisibleNodes<T>(ctrl: TreeEngine<T>, node: LTreeNode<T>): number {
 	let count = 1;
 	if (node.hasChildren && node.isExpanded) {
 		for (const child of ctrl.getChildren(node.path)) count += countVisibleNodes(ctrl, child);

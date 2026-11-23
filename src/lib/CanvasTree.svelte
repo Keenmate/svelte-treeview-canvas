@@ -1,6 +1,6 @@
 <script lang="ts" generics="T">
 	import { type Snippet, onDestroy, untrack } from 'svelte';
-	import { TreeProvider, TreeController, type TreeControllerProps } from '@keenmate/svelte-treeview';
+	import { TreeProvider, TreeEngine, type TreeEngineProps } from '@keenmate/svelte-treeview';
 	import type {
 		LTreeNode,
 		DropPosition,
@@ -76,11 +76,11 @@
 
 	// ── Props ─────────────────────────────────────────────────────────────
 
-	/** A TreeController prop passed straight through (same type as on svelte-treeview's <Tree>). */
-	type P = TreeControllerProps<T>;
+	/** A TreeEngine prop passed straight through (same type as on svelte-treeview's <Tree>). */
+	type P = TreeEngineProps<T>;
 
 	interface Props {
-		// Data (passed through to TreeController)
+		// Data (passed through to TreeEngine)
 		/** The tree's data: the input AND the current state — after a mutation (move / add /
 		 *  remove / paste / branch ops) `bind:nodes` receives the tree's data (microtask).
 		 *  Assigning a new array reloads the tree. Same as svelte-treeview's `nodes`. */
@@ -90,7 +90,7 @@
 		sortCallback?: P['sortCallback'];
 		/** Levels expanded on load (0 = only the roots). Default 0, like svelte-treeview. */
 		expandLevel?: number;
-		// Additional TreeController passthrough props
+		// Additional TreeEngine passthrough props
 		isSorted?: boolean;
 		/** `false` = never auto-sort (input order kept; inserts keep their exact position). Default true. */
 		isSortingEnabled?: boolean;
@@ -179,7 +179,7 @@
 		selectedPaths?: Set<string>;
 		/** Paths of the expanded nodes. Assigning replaces the expanded state — silent. */
 		expandedPaths?: Set<string>;
-		controller?: TreeController<T> | null;
+		controller?: TreeEngine<T> | null;
 
 		// Events (on* = fire-and-forget; one ctx object, `controller` on every ctx)
 		onNodeClick?: (ctx: NodeEventContext<T>) => void;
@@ -363,7 +363,7 @@
 
 	let canvasEl: HTMLCanvasElement | undefined = $state();
 	let containerEl: HTMLDivElement | undefined = $state();
-	let ctrlRef: TreeController<T> | null = null;
+	let ctrlRef: TreeEngine<T> | null = null;
 	let rafId: number | null = null;
 	/** Tooltip state — explicitly updated at end of each draw() for reliable reactivity */
 	let tooltipLn = $state<LayoutNode<T> | null>(null);
@@ -975,7 +975,7 @@
 				const shift = modifiers?.shift ?? false;
 
 				if (ctrlRef) {
-					// Route all selection through TreeController so selectionAnchor stays in sync
+					// Route all selection through TreeEngine so selectionAnchor stays in sync
 					if (ctrl) {
 						ctrlRef.selectNode(path, 'toggle');
 					} else if (shift) {
@@ -1412,7 +1412,7 @@
 		}
 	}
 
-	function captureCtrl(ctrl: TreeController<T>) {
+	function captureCtrl(ctrl: TreeEngine<T>) {
 		// Only set the non-reactive internal ref here (called from template)
 		if (ctrlRef === ctrl) return;
 		ctrlRef = ctrl;
@@ -2145,7 +2145,7 @@
 	/** Sunburst-aware expand: at each parent, check if children would overflow
 	 *  into sub-rings. If they fit → expand ALL. If overflow → only the biggest.
 	 *  This adapts to the angular space available at each depth. */
-	function sunburstExpandAll(ctrl: TreeController<T>, nodePath: string | null) {
+	function sunburstExpandAll(ctrl: TreeEngine<T>, nodePath: string | null) {
 		const MIN_ARC = 40; // matches MIN_ARC_PX in canvas-layout-sunburst.ts
 		const MAX_CHILD_SWEEP = Math.PI * 1.8; // matches MAX_CHILD_SWEEP in canvas-layout-sunburst.ts
 		const MIN_EXPAND_SWEEP = 0.15; // ~8.6°, stop recursing into narrower slices

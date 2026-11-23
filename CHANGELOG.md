@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — the engine is `TreeEngine`; callbacks get the public `TreeController` (svelte-treeview 5.0.0-rc18, 2026-11-23)
+
+svelte-treeview split its controller into the engine (`TreeEngine`, what `TreeProvider` hands the canvas) and the
+public `TreeController` facade that every callback ctx carries. In the canvas, the `controller` prop and every layout
+helper's `ctrl` are typed `TreeEngine<T>`, which is the same object as before. The type re-export is now `TreeEngine` /
+`TreeEngineProps`, plus the `TreeController` facade type. Menu and event ctx (`withController`) carry the facade
+(`engine.controller`), the same as svelte-treeview's `<Tree>`.
+
 ### Changed — keyboard-navigation names follow `@keenmate/svelte-treeview` 5.0.0-rc18 (2026-11-22)
 
 The canvas spatial navigation implements the renamed `TreeNavigation` interface (`navigationOverrides` keys

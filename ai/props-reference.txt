@@ -5,7 +5,7 @@ Complete list of CanvasTree props with types and defaults.
 Every callback takes ONE ctx object (fields can be added later); `controller` is on every
 ctx (non-enumerable). Same vocabulary as @keenmate/svelte-treeview 5.0.0-rc16.
 
-DATA PROPS (passed to TreeController)
+DATA PROPS (passed to TreeEngine)
 --------------------------------------
 nodes?: T[]                        — Flat array of tree items. Input AND current state: after a
                                      mutation `bind:nodes` receives the tree's data (microtask);
@@ -100,7 +100,7 @@ BINDABLE STATE
 focusedPath?: string|null           — The cursor node (keyboard navigation, last click).
 selectedPaths?: Set<string>         — The selection (click / Ctrl / Shift / rectangle). Assigning replaces it (silent).
 expandedPaths?: Set<string>         — The expanded nodes. Assigning replaces the expanded state (silent).
-controller?: TreeController<T>|null — TreeController reference.
+controller?: TreeEngine<T>|null — TreeEngine reference.
 
 EVENTS
 ------

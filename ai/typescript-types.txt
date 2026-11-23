@@ -62,10 +62,10 @@ import type {
   TreeLabels,
   TreeNavigation,
   TreeNavigationOverrides,
-  TreeControllerProps,
+  TreeEngineProps,
 } from '@keenmate/svelte-treeview-canvas';
 
-import { TreeController, createMenuDivider } from '@keenmate/svelte-treeview-canvas';
+import { TreeEngine, createMenuDivider } from '@keenmate/svelte-treeview-canvas';
 
 // Canvas event / menu contexts
 import type {

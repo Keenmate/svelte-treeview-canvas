@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { CanvasTree } from '$lib/index.js';
-	import type { TreeController, LTreeNode, ClickBehavior, NodeEventContext, SelectionChangeContext } from '@keenmate/svelte-treeview';
+	import type { TreeEngine, LTreeNode, ClickBehavior, NodeEventContext, SelectionChangeContext } from '@keenmate/svelte-treeview';
 
 	const STORAGE_KEY = 'canvas-interaction-settings';
 
@@ -77,7 +77,7 @@
 	// ── State ────────────────────────────────────────────────────────
 	let clickBehavior = $state<ClickBehavior>(saved.clickBehavior);
 	let canvasTreeRef = $state<CanvasTree<Item> | null>(null);
-	let ctrlRef = $state<TreeController<Item> | null>(null);
+	let ctrlRef = $state<TreeEngine<Item> | null>(null);
 
 	// Canvas package still uses old API: focusedPath (focused) + selectedPaths (highlighted)
 	let focusedPath = $state<string | null>(null);

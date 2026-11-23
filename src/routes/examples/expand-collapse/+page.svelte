@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { CanvasTree } from '$lib/index.js';
-	import type { TreeController, LTreeNode } from '@keenmate/svelte-treeview';
+	import type { TreeEngine, LTreeNode } from '@keenmate/svelte-treeview';
 
 	interface Item {
 		id: number;
@@ -39,15 +39,15 @@
 
 	// ── Tree A: array variants demo ─────────────────────────────────
 	let treeARef = $state<CanvasTree<Item> | null>(null);
-	let ctrlARef = $state<TreeController<Item> | null>(null);
+	let ctrlARef = $state<TreeEngine<Item> | null>(null);
 
 	// ── Tree B: exclusive focus demo ────────────────────────────────
 	let treeBRef = $state<CanvasTree<Item> | null>(null);
-	let ctrlBRef = $state<TreeController<Item> | null>(null);
+	let ctrlBRef = $state<TreeEngine<Item> | null>(null);
 
 	// ── Tree C/D: isCheckedMember demo ──────────────────────────────
-	let ctrlNoSeed = $state<TreeController<Item> | null>(null);
-	let ctrlSeeded = $state<TreeController<Item> | null>(null);
+	let ctrlNoSeed = $state<TreeEngine<Item> | null>(null);
+	let ctrlSeeded = $state<TreeEngine<Item> | null>(null);
 	const checkedNoSeed = $derived([...(ctrlNoSeed?.checkedPaths ?? [])]);
 	const checkedSeeded = $derived([...(ctrlSeeded?.checkedPaths ?? [])]);
 
@@ -55,7 +55,7 @@
 	let expandedA = $state<string[]>([]);
 	let expandedB = $state<string[]>([]);
 
-	function collectExpanded(ctrl: TreeController<Item> | null): string[] {
+	function collectExpanded(ctrl: TreeEngine<Item> | null): string[] {
 		if (!ctrl) return [];
 		const out: string[] = [];
 		const walk = (nodes: LTreeNode<Item>[]) => {

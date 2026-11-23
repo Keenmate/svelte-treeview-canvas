@@ -114,7 +114,7 @@ Groups sibling nodes into visual boxes (default: true).
 
 SEARCH INTEGRATION
 ------------------
-Use TreeController for search:
+Use TreeEngine for search:
 
 <script>
   let ctrlRef;

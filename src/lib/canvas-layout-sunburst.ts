@@ -1,5 +1,5 @@
 import type { LTreeNode } from '@keenmate/svelte-treeview';
-import type { TreeController } from '@keenmate/svelte-treeview';
+import type { TreeEngine } from '@keenmate/svelte-treeview';
 import type { LayoutNode, LayoutResult, LayoutConfig } from './types.js';
 import type { CanvasTheme } from './canvas-theme.js';
 import { finishLayout } from './canvas-layout.js';
@@ -23,7 +23,7 @@ const MAX_CHILD_SWEEP = Math.PI * 1.8; // 324° — leaves a small wedge gap
  * Count descendant leaves for proportional angular allocation.
  * A leaf is either a node with no children, or a collapsed node.
  */
-function countLeaves<T>(ctrl: TreeController<T>, node: LTreeNode<T>): number {
+function countLeaves<T>(ctrl: TreeEngine<T>, node: LTreeNode<T>): number {
 	if (!node.hasChildren || !node.isExpanded) return 1;
 	const children = ctrl.getChildren(node.path);
 	let total = 0;
@@ -40,7 +40,7 @@ function countLeaves<T>(ctrl: TreeController<T>, node: LTreeNode<T>): number {
  * - Accordion behavior (in CanvasTree) prevents sibling overlap
  */
 export function computeLayoutSunburst<T>(
-	ctrl: TreeController<T>,
+	ctrl: TreeEngine<T>,
 	measureNodeWidth: (_node: LTreeNode<T>) => number,
 	config: LayoutConfig,
 	ringWidth: number,
@@ -136,7 +136,7 @@ export function computeLayoutSunburst<T>(
  * Two-pass allocation: guarantee minimum readable arc, then distribute rest.
  */
 function layoutChildren<T>(
-	ctrl: TreeController<T>,
+	ctrl: TreeEngine<T>,
 	children: LTreeNode<T>[],
 	depth: number,
 	parentStart: number,

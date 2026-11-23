@@ -1,5 +1,5 @@
 import type { LTreeNode } from '@keenmate/svelte-treeview';
-import type { TreeController } from '@keenmate/svelte-treeview';
+import type { TreeEngine } from '@keenmate/svelte-treeview';
 import type { LayoutNode, LayoutResult, LayoutConfig, GrowthDirection } from './types.js';
 import { resolveLevel, finishLayout } from './canvas-layout.js';
 
@@ -11,7 +11,7 @@ import { resolveLevel, finishLayout } from './canvas-layout.js';
  * Uses shared counters so subtrees don't overlap.
  */
 export function computeLayoutFishbone<T>(
-	ctrl: TreeController<T>,
+	ctrl: TreeEngine<T>,
 	growthDirection: GrowthDirection,
 	measureNodeWidth: (node: LTreeNode<T>) => number,
 	config: LayoutConfig
@@ -25,7 +25,7 @@ export function computeLayoutFishbone<T>(
 // ── Horizontal fishbone (spine = X axis, branches grow on Y axis) ───
 
 function computeFishboneH<T>(
-	ctrl: TreeController<T>,
+	ctrl: TreeEngine<T>,
 	measureNodeWidth: (node: LTreeNode<T>) => number,
 	config: LayoutConfig
 ): LayoutResult<T> {
@@ -152,7 +152,7 @@ function buildDepthYsDown(startTop: number, config: LayoutConfig): (d: number, h
 
 /** Layout a node in a vertical branch, sharing X counter */
 function layoutBranchNodeV<T>(
-	ctrl: TreeController<T>,
+	ctrl: TreeEngine<T>,
 	treeNode: LTreeNode<T>,
 	depth: number,
 	parent: LayoutNode<T>,
@@ -194,7 +194,7 @@ function layoutBranchNodeV<T>(
 // ── Vertical fishbone (spine = Y axis, branches grow on X axis) ─────
 
 function computeFishboneV<T>(
-	ctrl: TreeController<T>,
+	ctrl: TreeEngine<T>,
 	measureNodeWidth: (node: LTreeNode<T>) => number,
 	config: LayoutConfig
 ): LayoutResult<T> {
@@ -307,7 +307,7 @@ function buildDepthXsLeft(startRight: number, measureNodeWidth: (node: any) => n
 }
 
 function layoutBranchNodeH<T>(
-	ctrl: TreeController<T>,
+	ctrl: TreeEngine<T>,
 	treeNode: LTreeNode<T>,
 	depth: number,
 	parent: LayoutNode<T>,
@@ -350,7 +350,7 @@ function layoutBranchNodeH<T>(
 
 /** Measure total cross-axis (Y) extent of a branch for horizontal fishbone */
 function measureBranchCrossExtent<T>(
-	ctrl: TreeController<T>,
+	ctrl: TreeEngine<T>,
 	node: LTreeNode<T>,
 	depth: number,
 	measureNodeWidth: (node: LTreeNode<T>) => number,
@@ -373,7 +373,7 @@ function measureBranchCrossExtent<T>(
 
 /** Measure total cross-axis (X) extent of a branch for vertical fishbone */
 function measureBranchCrossExtentH<T>(
-	ctrl: TreeController<T>,
+	ctrl: TreeEngine<T>,
 	node: LTreeNode<T>,
 	depth: number,
 	measureNodeWidth: (node: LTreeNode<T>) => number,

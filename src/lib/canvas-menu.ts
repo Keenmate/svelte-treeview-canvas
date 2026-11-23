@@ -7,7 +7,7 @@
  */
 import type {
 	LTreeNode,
-	TreeController,
+	TreeEngine,
 	TreeMenuContext,
 	TreeMenuItem,
 	MenuEntry,
@@ -21,20 +21,20 @@ export { getMenuChildren } from '@keenmate/svelte-treeview';
 export type { ResolvedMenuEntry } from '@keenmate/svelte-treeview';
 
 /** The node menu's surface ctx: `{ node, path, parent, siblings, controller }`. */
-export function nodeMenuContext<T>(controller: TreeController<T>, node: LTreeNode<T>): TreeMenuContext<T> {
+export function nodeMenuContext<T>(controller: TreeEngine<T>, node: LTreeNode<T>): TreeMenuContext<T> {
 	return controller.menuContext(node);
 }
 
-/** Attach `controller` non-enumerably (like svelte-treeview's callback contexts). */
-export function withController<T, C extends object>(controller: TreeController<T>, obj: C): C & TreeCallbackContext<T> {
-	Object.defineProperty(obj, 'controller', { value: controller, enumerable: false, configurable: true });
+/** Attach the public `controller` (the engine's facade) non-enumerably, like svelte-treeview's callback contexts. */
+export function withController<T, C extends object>(engine: TreeEngine<T>, obj: C): C & TreeCallbackContext<T> {
+	Object.defineProperty(obj, 'controller', { value: engine.controller, enumerable: false, configurable: true });
 	return obj as C & TreeCallbackContext<T>;
 }
 
 /** Resolve one menu level; built-in actions get their texts / state from the controller
  *  (on the empty-canvas menu — no node — the node-bound built-ins come out disabled). */
 export function resolveCanvasMenu<T, Ctx extends TreeCallbackContext<T>>(
-	controller: TreeController<T>,
+	controller: TreeEngine<T>,
 	entries: readonly (MenuEntry<Ctx, string> | string)[] | null | undefined,
 	ctx: Ctx
 ): ResolvedMenuEntry<Ctx, string>[] {
@@ -50,7 +50,7 @@ export function resolveCanvasMenu<T, Ctx extends TreeCallbackContext<T>>(
  * collapse-all, sort-all).
  */
 export function activateCanvasMenuItem<T, Ctx extends TreeCallbackContext<T>>(
-	controller: TreeController<T>,
+	controller: TreeEngine<T>,
 	item: MenuItem<Ctx, string>,
 	ctx: Ctx,
 	opts: { trigger?: HTMLElement; event?: Event } = {}
@@ -65,7 +65,7 @@ export function activateCanvasMenuItem<T, Ctx extends TreeCallbackContext<T>>(
 
 /** Find a visible, enabled item whose `shortcut` matches the key event (searches static children too). */
 export function findItemByShortcut<T, Ctx extends TreeCallbackContext<T>>(
-	controller: TreeController<T>,
+	controller: TreeEngine<T>,
 	entries: readonly (MenuEntry<Ctx, string> | string)[] | null | undefined,
 	ctx: Ctx,
 	event: KeyboardEvent

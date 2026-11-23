@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { CanvasTree } from '$lib/index.js';
-	import type { TreeController, LTreeNode, ClickBehavior } from '@keenmate/svelte-treeview';
+	import type { TreeEngine, LTreeNode, ClickBehavior } from '@keenmate/svelte-treeview';
 
 	/**
 	 * Minimal e2e fixture for canvas interaction (selection, focus, expand/collapse).
@@ -35,7 +35,7 @@
 	}
 
 	let canvasTreeRef = $state<CanvasTree<Item> | null>(null);
-	let ctrlRef = $state<TreeController<Item> | null>(null);
+	let ctrlRef = $state<TreeEngine<Item> | null>(null);
 	let clickBehavior = $state<ClickBehavior>('select');
 	let focusedPath = $state<string | null>(null);
 	let selectedPaths = $state<Set<string>>(new Set());

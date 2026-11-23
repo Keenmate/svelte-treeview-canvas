@@ -1,10 +1,10 @@
 import type { LTreeNode } from '@keenmate/svelte-treeview';
 import type { DropPosition, ClickBehavior, NodeRef, TreeCallbackContext, TreeMenuContext, TreeMenuItem, TreeMenuEntry } from '@keenmate/svelte-treeview';
-import type { TreeController, TreeControllerProps } from '@keenmate/svelte-treeview';
+import type { TreeController, TreeEngine, TreeEngineProps } from '@keenmate/svelte-treeview';
 import type { CanvasTheme } from './canvas-theme.js';
 
 // Re-export for convenience
-export type { LTreeNode, DropPosition, ClickBehavior, TreeMenuContext, TreeMenuItem, TreeMenuEntry, TreeController, TreeControllerProps };
+export type { LTreeNode, DropPosition, ClickBehavior, TreeMenuContext, TreeMenuItem, TreeMenuEntry, TreeController, TreeEngine, TreeEngineProps };
 
 // ── Event / menu contexts ────────────────────────────────────────────────
 

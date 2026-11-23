@@ -3,7 +3,7 @@
 	import { Tree } from '@keenmate/svelte-treeview';
 	import { TreeProvider } from '@keenmate/svelte-treeview';
 	import { CanvasTree } from '$lib/index.js';
-	import { TreeController } from '@keenmate/svelte-treeview';
+	import { TreeEngine } from '@keenmate/svelte-treeview';
 	import type { LTreeNode } from '@keenmate/svelte-treeview';
 
 	const STORAGE_KEY = 'svelte-treeview-json-loader-config';
@@ -596,7 +596,7 @@
 	let canvasAnimTo: { panX: number; panY: number; zoom: number } | null = null;
 	let canvasAnimStartTime = 0;
 	let canvasIsMinimapPanning = false;
-	let canvasCtrlRef: TreeController<any> | null = null;
+	let canvasCtrlRef: TreeEngine<any> | null = null;
 	let canvasRafId: number | null = null;
 	let canvasLevelX: number[] = [0];
 
@@ -631,7 +631,7 @@
 		return Math.min(canvasMaxGridCols, Math.ceil(Math.sqrt(count)));
 	}
 
-	function cvMeasureDepthWidths(ctrl: TreeController<any>): number[] {
+	function cvMeasureDepthWidths(ctrl: TreeEngine<any>): number[] {
 		const depthMaxW = new Map<number, number>();
 		function measure(treeNode: LTreeNode<any>, depth: number) {
 			const w = cvNodeWidth(treeNode);
@@ -652,7 +652,7 @@
 		return levelX;
 	}
 
-	function cvComputeLayoutH(ctrl: TreeController<any>) {
+	function cvComputeLayoutH(ctrl: TreeEngine<any>) {
 		const t0 = performance.now();
 		canvasLevelX = cvMeasureDepthWidths(ctrl);
 		const nodes: LayoutNode[] = [];
@@ -685,7 +685,7 @@
 		cvFinishLayout(nodes, t0);
 	}
 
-	function cvComputeLayoutV(ctrl: TreeController<any>) {
+	function cvComputeLayoutV(ctrl: TreeEngine<any>) {
 		const t0 = performance.now();
 		const nodes: LayoutNode[] = [];
 		let nextX = 0;
@@ -717,7 +717,7 @@
 		cvFinishLayout(nodes, t0);
 	}
 
-	function cvComputeLayoutGroupedH(ctrl: TreeController<any>) {
+	function cvComputeLayoutGroupedH(ctrl: TreeEngine<any>) {
 		const t0 = performance.now();
 		canvasLevelX = cvMeasureDepthWidths(ctrl);
 		const nodes: LayoutNode[] = [];
@@ -798,7 +798,7 @@
 		cvFinishLayout(nodes, t0);
 	}
 
-	function cvComputeLayoutGroupedV(ctrl: TreeController<any>) {
+	function cvComputeLayoutGroupedV(ctrl: TreeEngine<any>) {
 		const t0 = performance.now();
 		const nodes: LayoutNode[] = [];
 		const boxes: GroupBox[] = [];
@@ -898,7 +898,7 @@
 		canvasLayoutTime = performance.now() - t0;
 	}
 
-	function computeCanvasLayout(ctrl: TreeController<any>) {
+	function computeCanvasLayout(ctrl: TreeEngine<any>) {
 		canvasGroupBoxes = [];
 		if (canvasGroupSiblings) {
 			if (canvasOrientation === 'vertical') cvComputeLayoutGroupedV(ctrl);
@@ -1484,7 +1484,7 @@
 		return [wx, wy];
 	}
 
-	function captureCanvasCtrl(ctrl: TreeController<any>) { canvasCtrlRef = ctrl; }
+	function captureCanvasCtrl(ctrl: TreeEngine<any>) { canvasCtrlRef = ctrl; }
 
 	// ── Canvas reactive effects ───────────────────────────────────────────
 

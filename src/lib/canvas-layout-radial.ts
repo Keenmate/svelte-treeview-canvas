@@ -1,5 +1,5 @@
 import type { LTreeNode } from '@keenmate/svelte-treeview';
-import type { TreeController } from '@keenmate/svelte-treeview';
+import type { TreeEngine } from '@keenmate/svelte-treeview';
 import type { LayoutNode, LayoutResult, LayoutConfig } from './types.js';
 import type { CanvasTheme } from './canvas-theme.js';
 import { resolveLevel, finishLayout } from './canvas-layout.js';
@@ -9,7 +9,7 @@ import { resolveLevel, finishLayout } from './canvas-layout.js';
  * Arc per node = max(w, h) + gap. Summed across all visible nodes at that depth.
  */
 function collectDepthArcs<T>(
-	ctrl: TreeController<T>,
+	ctrl: TreeEngine<T>,
 	rootNode: LTreeNode<T>,
 	measureNodeWidth: (node: LTreeNode<T>) => number,
 	config: LayoutConfig
@@ -67,7 +67,7 @@ function computeDepthRadii(
  * Nodes remain upright (no rotated text).
  */
 export function computeLayoutRadial<T>(
-	ctrl: TreeController<T>,
+	ctrl: TreeEngine<T>,
 	measureNodeWidth: (node: LTreeNode<T>) => number,
 	config: LayoutConfig,
 	startAngleDeg: number,
@@ -188,7 +188,7 @@ export function computeLayoutRadial<T>(
  * then normalize so total equals parent's sweep.
  */
 function layoutRadialChildren<T>(
-	ctrl: TreeController<T>,
+	ctrl: TreeEngine<T>,
 	children: LTreeNode<T>[],
 	depth: number,
 	measureNodeWidth: (node: LTreeNode<T>) => number,

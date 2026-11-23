@@ -26,9 +26,9 @@ export { defaultCanvasTheme } from "./canvas-theme.js"
 
 // Re-export core types for convenience
 export type {
-    LTreeNode, DropPosition, TreeControllerProps, NodeRef, TreeCallbackContext,
+    LTreeNode, DropPosition, TreeEngineProps, NodeRef, TreeCallbackContext,
     NodeEventContext, SelectionChangeContext, ExpandOptions, SortOptions, TreeLabels,
     TreeMenuContext, TreeMenuItem, TreeMenuEntry, TreeAction, TreeActionEventDetail, MenuEntry, MenuDivider,
     TreeNavigation, TreeNavigationOverrides
 } from "@keenmate/svelte-treeview"
-export { TreeController, createMenuDivider } from "@keenmate/svelte-treeview"
+export { TreeEngine, createMenuDivider } from "@keenmate/svelte-treeview"

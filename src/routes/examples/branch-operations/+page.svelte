@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { CanvasGroupMenuContext, CanvasMenuContext } from '$lib/types.js';
 	import { CanvasTree } from '$lib/index.js';
-	import { TreeController, getClipboard, clearClipboard } from '@keenmate/svelte-treeview';
+	import { TreeEngine, getClipboard, clearClipboard } from '@keenmate/svelte-treeview';
 	import type { LTreeNode, TreeMenuEntry, TreeMenuContext, MenuEntry, ClipboardEntry, PasteResult } from '@keenmate/svelte-treeview';
 	import type { GrowthDirection, ClickBehavior } from '$lib/types.js';
 
@@ -72,7 +72,7 @@
 
 	let focusedPath = $state<string | null>(null);
 	let selectedPaths = $state<Set<string>>(new Set());
-	let ctrlRef = $state<TreeController<OrgNode> | null>(null);
+	let ctrlRef = $state<TreeEngine<OrgNode> | null>(null);
 	let canvasTreeRef: ReturnType<typeof CanvasTree> | undefined = $state();
 
 	// Metrics

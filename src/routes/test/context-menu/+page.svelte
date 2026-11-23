@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { CanvasMenuContext } from '$lib/types.js';
 	import { CanvasTree } from '$lib/index.js';
-	import type { TreeController, LTreeNode, TreeMenuEntry, TreeMenuContext, MenuEntry, TreeAction } from '@keenmate/svelte-treeview';
+	import type { TreeEngine, LTreeNode, TreeMenuEntry, TreeMenuContext, MenuEntry, TreeAction } from '@keenmate/svelte-treeview';
 	import { createMenuDivider } from '@keenmate/svelte-treeview';
 
 	/**
@@ -33,7 +33,7 @@
 	}
 
 	let canvasTreeRef = $state<CanvasTree<Item> | null>(null);
-	let ctrlRef = $state<TreeController<Item> | null>(null);
+	let ctrlRef = $state<TreeEngine<Item> | null>(null);
 	let lastAction = $state('(none)');
 	let visibleCount = $state(0);
 
