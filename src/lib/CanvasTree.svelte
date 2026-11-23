@@ -103,7 +103,7 @@
 		getSearchValueCallback?: P['getSearchValueCallback'];
 		treePathSeparator?: string;
 		dragDropMode?: 'none' | 'self' | 'cross' | 'both';
-		shouldUseInternalSearchIndex?: boolean;
+		isInternalSearchIndexEnabled?: boolean;
 		rangeSelectionMode?: 'visual' | 'logical';
 		isExpandedMember?: string;
 		isDraggableMember?: string;
@@ -188,8 +188,8 @@
 		onNodeExpand?: P['onNodeExpand'];
 		onNodeCollapse?: P['onNodeCollapse'];
 		onExpandedChange?: P['onExpandedChange'];
-		onTreeChange?: P['onTreeChange'];
-		onNodesReorder?: P['onNodesReorder'];
+		onNodesChange?: P['onNodesChange'];
+		onNodesSort?: P['onNodesSort'];
 		/** A context-menu item ran (after its `onClick` / built-in action). */
 		onAction?: P['onAction'];
 
@@ -250,7 +250,7 @@
 		getSearchValueCallback,
 		treePathSeparator,
 		dragDropMode = 'self',
-		shouldUseInternalSearchIndex,
+		isInternalSearchIndexEnabled,
 		rangeSelectionMode = 'visual',
 		isExpandedMember,
 		isDraggableMember,
@@ -323,8 +323,8 @@
 		onNodeExpand,
 		onNodeCollapse,
 		onExpandedChange,
-		onTreeChange,
-		onNodesReorder,
+		onNodesChange,
+		onNodesSort,
 		onAction,
 		beforeExpandCallback,
 		beforeActionCallback,
@@ -1610,7 +1610,7 @@
 		if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
 		// Handle node context menu shortcuts
-		if (ctrlRef?.contextMenuVisible) {
+		if (ctrlRef?.isContextMenuOpen) {
 			if (e.key === 'Escape') {
 				ctrlRef.closeContextMenu();
 				return;
@@ -1650,7 +1650,7 @@
 		}
 
 		// Clipboard shortcuts (Ctrl+C/X/V, Escape to cancel cut)
-		if (isClipboardEnabled && ctrlRef && !ctrlRef.contextMenuVisible && !canvasMenuVisible) {
+		if (isClipboardEnabled && ctrlRef && !ctrlRef.isContextMenuOpen && !canvasMenuVisible) {
 			if (e.ctrlKey && e.key === 'c') {
 				ctrlRef.copyNodes();
 				e.preventDefault();
@@ -2419,7 +2419,7 @@
 	getSearchValueCallback={getSearchValueCallback}
 	treePathSeparator={treePathSeparator}
 	dragDropMode={dragDropMode}
-	shouldUseInternalSearchIndex={shouldUseInternalSearchIndex}
+	isInternalSearchIndexEnabled={isInternalSearchIndexEnabled}
 	rangeSelectionMode={rangeSelectionMode}
 	isExpandedMember={isExpandedMember}
 	isDraggableMember={isDraggableMember}
@@ -2436,8 +2436,8 @@
 	{onNodeCollapse}
 	{onExpandedChange}
 	{beforeExpandCallback}
-	{onTreeChange}
-	{onNodesReorder}
+	{onNodesChange}
+	{onNodesSort}
 	{onNodePaste}
 	{onNodeCopy}
 	{onNodeCut}
@@ -2464,7 +2464,7 @@
 			></canvas>
 		</div>
 
-		{#if tooltipLn && !ctrl.contextMenuVisible && !canvasMenuVisible}
+		{#if tooltipLn && !ctrl.isContextMenuOpen && !canvasMenuVisible}
 			<div class="canvas-tree-tooltip" style="position: fixed; left: {tooltipX}px; top: {tooltipY}px;">
 				{#if tooltipSnippet}
 					{@render tooltipSnippet(tooltipLn.node, getLabel(tooltipLn.node))}
@@ -2539,7 +2539,7 @@
 			{/each}
 		{/snippet}
 
-		{#if ctrl.contextMenuVisible && ctrl.contextMenuNode && getNodeContextMenuItemsHandler}
+		{#if ctrl.isContextMenuOpen && ctrl.contextMenuNode && getNodeContextMenuItemsHandler}
 			{@const nodeCtx = nodeMenuContext(ctrl, ctrl.contextMenuNode as LTreeNode<T>)}
 			{@const menuEntries = getNodeContextMenuItemsHandler(nodeCtx)}
 			<div class="canvas-tree-ctx-menu" style="position: fixed; left: {ctrl.contextMenuX}px; top: {ctrl.contextMenuY}px; z-index: 10000;" role="menu">

@@ -1968,7 +1968,7 @@
 							isProgressiveRenderEnabled={progressiveRender}
 							{initialBatchSize}
 							{maxBatchSize}
-							shouldUseInternalSearchIndex={true}
+							isInternalSearchIndexEnabled={true}
 							searchValueMember={displayMember || undefined}
 							displayValueMember={displayMember || undefined}
 							bind:focusedNode={selectedNode}
@@ -2025,7 +2025,7 @@
 						{sortCallback}
 						{isSorted}
 						{expandLevel}
-						shouldUseInternalSearchIndex={true}
+						isInternalSearchIndexEnabled={true}
 						searchValueMember={displayMember || undefined}
 						displayValueMember={displayMember || undefined}
 					>
@@ -2086,7 +2086,7 @@
 							{expandLevel}
 							displayValueMember={displayMember || undefined}
 							searchValueMember={displayMember || undefined}
-							shouldUseInternalSearchIndex={true}
+							isInternalSearchIndexEnabled={true}
 							layoutMode="sunburst"
 							{sunburstRingWidth}
 							dragDropMode="none"

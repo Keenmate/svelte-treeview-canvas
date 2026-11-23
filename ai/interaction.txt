@@ -191,7 +191,7 @@ isSortingEnabled={false} keeps the input order. Explicit sorting (runs regardles
 canvasTreeRef.sortNodes('1.2', { direction: 'desc' });   // the node's children, one level
 canvasTreeRef.sortAll();                                 // whole tree
 With orderMember set, a custom compareCallback / 'desc' rewrites the order values and fires
-onNodesReorder({ parentPath, nodes, changes }).
+onNodesSort({ parentPath, nodes, changes }).
 
 SEARCH RESULT NAVIGATION
 --------------------------

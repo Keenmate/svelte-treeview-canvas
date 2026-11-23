@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — svelte-treeview's renamed props / events (2026-11-23)
+
+- Follows svelte-treeview's naming pass: `shouldUseInternalSearchIndex` → `isInternalSearchIndexEnabled`, `onTreeChange` → `onNodesChange`, `onNodesReorder` → `onNodesSort`, engine `contextMenuVisible` → `isContextMenuOpen`.
+
 ### Changed — the engine is `TreeEngine`; callbacks get the public `TreeController` (svelte-treeview 5.0.0-rc18, 2026-11-23)
 
 svelte-treeview split its controller into the engine (`TreeEngine`, what `TreeProvider` hands the canvas) and the

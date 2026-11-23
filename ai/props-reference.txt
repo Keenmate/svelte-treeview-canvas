@@ -25,7 +25,7 @@ searchValueMember?: string         — Property for search text.
 getSearchValueCallback?: ({ node }) => string
 treePathSeparator?: string         — Path separator (default: ".").
 dragDropMode?: 'none'|'self'|'cross'|'both'
-shouldUseInternalSearchIndex?: boolean
+isInternalSearchIndexEnabled?: boolean
 rangeSelectionMode?: 'visual'|'logical' — Multi-select range mode.
 isExpandedMember?: string
 isDraggableMember?: string
@@ -109,8 +109,8 @@ onSelectionChange?: ({ paths, nodes, controller }) => void
 onNodeDrop?: ({ source, target, position, controller }) => void   — source/target are NodeRefs
 onNodeExpand? / onNodeCollapse?: (ctx: NodeEventContext) => void
 onExpandedChange?: ({ paths, controller }) => void
-onTreeChange?: ({ controller }) => void                  — after a mutation (not on loading nodes)
-onNodesReorder?: ({ parentPath, nodes, changes, controller }) => void
+onNodesChange?: ({ controller }) => void                  — after a mutation (not on loading nodes)
+onNodesSort?: ({ parentPath, nodes, changes, controller }) => void
 onNodeCopy? / onNodeCut? / onNodeDelete?: ({ paths, nodes, controller }) => void
 onAction?: (detail) => void                              — a context-menu item ran
 

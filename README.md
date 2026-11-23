@@ -19,7 +19,7 @@ Breaking — the same vocabulary as svelte-treeview / web-treeview (see CHANGELO
   `beforeActionCallback` / `onAction`. Menu callbacks take one ctx (`TreeMenuContext`).
 - **Expand family**: `ExpandOptions { isExclusive, isSilent }`, `toggleNodeExpanded`, `bind:expandedPaths`,
   `onNodeExpand` / `onNodeCollapse` / `onExpandedChange` / `beforeExpandCallback`.
-- **Sorting**: `isSortingEnabled`, `sortNodes` / `sortAll`, `onNodesReorder`. Also `labels`, `onTreeChange`.
+- **Sorting**: `isSortingEnabled`, `sortNodes` / `sortAll`, `onNodesSort`. Also `labels`, `onNodesChange`.
 - **`expandLevel` defaults to `0`** (only the roots), like svelte-treeview.
 - **Boolean props use is / should prefixes**: `isCollapsingEnabled`, `shouldGroupSiblings`, `isDotGridShown`,
   `isFishboneCrossNavEnabled`, `shouldFocusOnSelect`, `isClipboardEnabled`; `FocusOptions { shouldAnimate, shouldSelect }`.

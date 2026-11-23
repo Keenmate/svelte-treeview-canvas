@@ -832,7 +832,7 @@
 					isSorted={true}
 					expandLevel={1}
 					dragDropMode="self"
-					shouldUseInternalSearchIndex={true}
+					isInternalSearchIndexEnabled={true}
 					searchValueMember="name"
 					bind:focusedPath
 					bind:selectedPaths

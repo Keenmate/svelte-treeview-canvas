@@ -865,7 +865,7 @@
 				expandLevel={2}
 				dragDropMode="self"
 				getIsCollapsibleCallback={({ node }) => (node.level ?? 0) > 2}
-				shouldUseInternalSearchIndex={true}
+				isInternalSearchIndexEnabled={true}
 				searchValueMember="name"
 				bind:focusedPath
 				bind:controller={ctrlRef}
