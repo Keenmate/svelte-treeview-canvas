@@ -48,8 +48,8 @@
 	// ── Tree C/D: isCheckedMember demo ──────────────────────────────
 	let ctrlNoSeed = $state<TreeEngine<Item> | null>(null);
 	let ctrlSeeded = $state<TreeEngine<Item> | null>(null);
-	const checkedNoSeed = $derived([...(ctrlNoSeed?.checkedPaths ?? [])]);
-	const checkedSeeded = $derived([...(ctrlSeeded?.checkedPaths ?? [])]);
+	const checkedNoSeed = $derived([...(ctrlNoSeed?.allCheckedPaths ?? [])]);
+	const checkedSeeded = $derived([...(ctrlSeeded?.allCheckedPaths ?? [])]);
 
 	// Visible/expanded paths for live readouts
 	let expandedA = $state<string[]>([]);
@@ -211,7 +211,7 @@
 		<h2><code>isCheckedMember</code> &mdash; pre-checked nodes from data</h2>
 		<p class="description">
 			Setting <code>isCheckedMember="isPreSelected"</code> tells the controller to walk the tree after
-			<code>insertArray</code> and seed its checked set (<code>controller.checkedPaths</code>) with every path where
+			<code>insertArray</code> and seed its checked set (<code>controller.allCheckedPaths</code> — every ticked node, never folded) with every path where
 			the field is truthy. Without it, <code>checkedPaths</code> starts empty even if your data has the field.
 			(The checked set is separate from the click selection, <code>selectedPaths</code>.)
 		</p>
@@ -234,7 +234,7 @@
 					/>
 				</div>
 				<div class="output">
-					<p class="output-label">controller.checkedPaths ({checkedNoSeed.length})</p>
+					<p class="output-label">controller.allCheckedPaths ({checkedNoSeed.length})</p>
 					<pre>{checkedNoSeed.length === 0 ? '(empty)' : checkedNoSeed.join(', ')}</pre>
 				</div>
 			</div>
@@ -256,7 +256,7 @@
 					/>
 				</div>
 				<div class="output">
-					<p class="output-label">controller.checkedPaths ({checkedSeeded.length})</p>
+					<p class="output-label">controller.allCheckedPaths ({checkedSeeded.length})</p>
 					<pre>{checkedSeeded.length === 0 ? '(empty)' : checkedSeeded.join(', ')}</pre>
 				</div>
 			</div>

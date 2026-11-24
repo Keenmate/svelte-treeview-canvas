@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — the expand-collapse example reads `controller.allCheckedPaths` (svelte-treeview rc18, 2026-11-24)
+
+- svelte-treeview's `controller.checkedPaths` is now the set folded by `cascadeCheckPolicy` (as the prop); the example shows every seeded checked node, which is `allCheckedPaths`.
+
 ### Changed — the branch-operations example uses `removeBranch(path, { shouldKeepParent: true })` (svelte-treeview rc18, 2026-11-24)
 
 - svelte-treeview's `removeBranch` takes an options object instead of a bare `keepParent` boolean.
