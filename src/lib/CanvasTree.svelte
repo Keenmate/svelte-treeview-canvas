@@ -908,7 +908,7 @@
 				if (!inSelection) {
 					console.debug(`[CanvasTree] onContextMenu: clearing selection, selecting only ${ln.node.path}`);
 					if (ctrlRef) {
-						// Replace the selection silently (rows included) without going through _onNodeClicked
+						// Replace the selection silently (rows included) without going through _handleNodeSelectClick
 						ctrlRef.updateProps({ selectedPaths: new Set([ln.node.path]) });
 						ctrlRef.focusedNode = ln.node;
 						ctrlRef.selectionAnchor = ln.node.path;

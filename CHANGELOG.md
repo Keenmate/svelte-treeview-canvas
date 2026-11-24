@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — the branch-operations example uses `removeBranch(path, { shouldKeepParent: true })` (svelte-treeview rc18, 2026-11-24)
+
+- svelte-treeview's `removeBranch` takes an options object instead of a bare `keepParent` boolean.
+
 ### Changed — svelte-treeview's renamed props / events (2026-11-23)
 
 - Follows svelte-treeview's naming pass: `shouldUseInternalSearchIndex` → `isInternalSearchIndexEnabled`, `onTreeChange` → `onNodesChange`, `onNodesReorder` → `onNodesSort`, engine `contextMenuVisible` → `isContextMenuOpen`.

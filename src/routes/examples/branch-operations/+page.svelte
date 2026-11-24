@@ -337,7 +337,7 @@
 				isDisabled: isProcessing,
 				onClick: () => {
 					if (!ctrlRef) return;
-					const result = ctrlRef.removeBranch(node.path, true);
+					const result = ctrlRef.removeBranch(node.path, { shouldKeepParent: true });
 					addLog(`Cleared ${result.count} children from "${node.data?.name}"`);
 				}
 			});
