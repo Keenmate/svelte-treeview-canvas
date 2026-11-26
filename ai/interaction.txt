@@ -28,6 +28,7 @@ Plain click:              Clear selection, select one
 
 Props:
   selectedPaths: Set<string>         — Bindable set of selected paths
+  selectionMode: 'single'|'multiple' — default 'multiple'; 'single' keeps one node selected
   rangeSelectionMode: 'visual'|'logical'
     visual:  2D bounding-box from canvas positions (default)
     logical: depth-first tree order (includes collapsed children)

@@ -104,6 +104,8 @@
 		treePathSeparator?: string;
 		dragDropMode?: 'none' | 'self' | 'cross' | 'both';
 		isInternalSearchIndexEnabled?: boolean;
+		/** 'multiple' (default — Ctrl / Shift / box ranges select several nodes) or 'single'. */
+		selectionMode?: 'single' | 'multiple';
 		rangeSelectionMode?: 'visual' | 'logical';
 		isExpandedMember?: string;
 		isDraggableMember?: string;
@@ -251,6 +253,7 @@
 		treePathSeparator,
 		dragDropMode = 'self',
 		isInternalSearchIndexEnabled,
+		selectionMode = 'multiple',
 		rangeSelectionMode = 'visual',
 		isExpandedMember,
 		isDraggableMember,
@@ -2420,6 +2423,7 @@
 	treePathSeparator={treePathSeparator}
 	dragDropMode={dragDropMode}
 	isInternalSearchIndexEnabled={isInternalSearchIndexEnabled}
+	selectionMode={selectionMode}
 	rangeSelectionMode={rangeSelectionMode}
 	isExpandedMember={isExpandedMember}
 	isDraggableMember={isDraggableMember}

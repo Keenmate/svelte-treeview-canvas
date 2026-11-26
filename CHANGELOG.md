@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — `selectionMode` prop, default `'multiple'` (svelte-treeview rc18 core selection, 2026-11-26)
+
+- svelte-treeview's selection now runs on core `createSelection`, which enforces `selectionMode` for the API too — its `selectNode(path, 'toggle' | 'range')` used to ignore single mode, and CanvasTree relied on that for Ctrl / Shift / box multi-select while the engine sat at its default `'single'`. CanvasTree now passes `selectionMode` (default `'multiple'`, so nothing changes); `'single'` keeps one node selected.
+
 ### Changed — `loadMenuChildren` (svelte-treeview rc18 core re-sync, 2026-11-24)
 
 - svelte-treeview re-exports core rc26's `loadMenuChildren` (was `getMenuChildren`); the canvas menu re-export follows.

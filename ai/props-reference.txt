@@ -26,6 +26,7 @@ getSearchValueCallback?: ({ node }) => string
 treePathSeparator?: string         — Path separator (default: ".").
 dragDropMode?: 'none'|'self'|'cross'|'both'
 isInternalSearchIndexEnabled?: boolean
+selectionMode?: 'single'|'multiple' — Default 'multiple' (Ctrl / Shift / box ranges select several nodes).
 rangeSelectionMode?: 'visual'|'logical' — Multi-select range mode.
 isExpandedMember?: string
 isDraggableMember?: string
