@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — `loadMenuChildren` (svelte-treeview rc18 core re-sync, 2026-11-24)
+
+- svelte-treeview re-exports core rc26's `loadMenuChildren` (was `getMenuChildren`); the canvas menu re-export follows.
+
 ### Changed — the expand-collapse example reads `controller.allCheckedPaths` (svelte-treeview rc18, 2026-11-24)
 
 - svelte-treeview's `controller.checkedPaths` is now the set folded by `cascadeCheckPolicy` (as the prop); the example shows every seeded checked node, which is `allCheckedPaths`.

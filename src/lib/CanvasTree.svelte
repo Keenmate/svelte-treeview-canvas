@@ -71,7 +71,7 @@
 		resolveCanvasMenu,
 		activateCanvasMenuItem,
 		findItemByShortcut,
-		getMenuChildren
+		loadMenuChildren
 	} from './canvas-menu.js';
 
 	// ── Props ─────────────────────────────────────────────────────────────
@@ -2529,7 +2529,7 @@
 					</button>
 					{#if entry.hasChildren}
 						<div class="canvas-tree-ctx-submenu" role="menu">
-							{#await getMenuChildren(item, menuCtx) then children}
+							{#await loadMenuChildren(item, menuCtx) then children}
 								{@render renderMenuLevel(children, menuCtx, closeFn)}
 							{/await}
 						</div>

@@ -3,7 +3,7 @@
  * (`TreeMenuEntry`: action items, `createMenuDivider()`, built-in action names), rendered by
  * CanvasTree's own menu markup over svelte-treeview's public custom-renderer API
  * (`controller.menuContext` / `menuItemDefaults` / `activateMenuItem`, `resolveMenuEntries`,
- * `getMenuChildren` — svelte-treeview 5.0.0-rc16).
+ * `loadMenuChildren` — svelte-treeview 5.0.0-rc18; was `getMenuChildren`).
  */
 import type {
 	LTreeNode,
@@ -17,7 +17,7 @@ import type {
 } from '@keenmate/svelte-treeview';
 import { resolveMenuEntries } from '@keenmate/svelte-treeview';
 
-export { getMenuChildren } from '@keenmate/svelte-treeview';
+export { loadMenuChildren } from '@keenmate/svelte-treeview';
 export type { ResolvedMenuEntry } from '@keenmate/svelte-treeview';
 
 /** The node menu's surface ctx: `{ node, path, parent, siblings, controller }`. */
