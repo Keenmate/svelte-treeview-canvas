@@ -7,11 +7,16 @@ CLICK BEHAVIOR
 ---------------
 clickBehavior prop controls what happens when clicking a node:
 
-| Mode             | Single click          | Double click         |
-|------------------|-----------------------|----------------------|
-| select           | Select only           | Expand/collapse      |
-| expand           | Expand/collapse       | —                    |
-| expand-and-focus | Expand + pan to node  | —                    |
+| Mode             | Single click                        | Double click                    |
+|------------------|-------------------------------------|---------------------------------|
+| select           | Select (chevron hit: expand/collapse)| Expand/collapse                 |
+| expand           | Select + expand/collapse            | Expand/collapse                 |
+| expand-and-focus | Select + expand/collapse + pan camera | Expand/collapse + camera moves to the first child |
+
+Every click selects in every mode (Ctrl / Shift as below) and onNodeClick fires on every click —
+a spatial view selects what you click. "focus" here means the CAMERA, not the keyboard cursor.
+This deliberately differs from the svelte-treeview / web-treeview list trees, where 'expand' leaves
+the selection alone on a folder click (see svelte-treeview docs/parity.md).
 
 "select" mode is ideal for multi-select workflows (single click = select,
 double click = expand).

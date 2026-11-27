@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Documented — what `clickBehavior` means on a canvas (2026-11-27)
+
+- Every click selects, in every mode; `'expand'` / `'expand-and-focus'` toggle a folder, `'expand-and-focus'` also pans the camera ("focus" = camera); `'select'` toggles only on the chevron or a double-click. svelte-treeview's list `<Tree>` now reads `'expand'` differently (a folder click leaves the selection alone) — canvas keeps its own reading on purpose. ai/interaction.txt corrected (it listed no selection on click and no double-click toggle in the expand modes).
+
+### Added — `navigationPreset` methods (2026-11-27)
+
+- The canvas navigation implements svelte-treeview's three new navigation methods (`expandOrFocusFirstChild`, `collapseOrFocusParent`, `expandSiblings`), so the controller methods work on a canvas. The canvas keeps its own spatial key handling: svelte-treeview's `navigationPreset` / `keyBindings` don't apply to it.
+
 ### Added — `selectionMode` prop, default `'multiple'` (svelte-treeview rc18 core selection, 2026-11-26)
 
 - svelte-treeview's selection now runs on core `createSelection`, which enforces `selectionMode` for the API too — its `selectNode(path, 'toggle' | 'range')` used to ignore single mode, and CanvasTree relied on that for Ctrl / Shift / box multi-select while the engine sat at its default `'single'`. CanvasTree now passes `selectionMode` (default `'multiple'`, so nothing changes); `'single'` keeps one node selected.
