@@ -1254,6 +1254,46 @@
 				recomputeAndDraw();
 			},
 
+			// navigationPreset 'wai-aria' →: a closed node opens (focus stays), an open one moves
+			// on like focusFirstChild (the layout decides where "into" is).
+			expandOrFocusFirstChild() {
+				if (!ctrlRef || !focusedPath) return;
+				const node = ctrlRef.getNodeByPath(focusedPath);
+				if (!node) return;
+				if (node.hasChildren && !node.isExpanded) {
+					ctrlRef.toggleNodeExpanded(focusedPath);
+					recomputeAndDraw();
+					return;
+				}
+				this.focusFirstChild();
+			},
+
+			// navigationPreset 'wai-aria' ←: an open node collapses (focus stays), else focusParent.
+			collapseOrFocusParent() {
+				if (!ctrlRef || !focusedPath) return;
+				const node = ctrlRef.getNodeByPath(focusedPath);
+				if (!node) return;
+				if (node.hasChildren && node.isExpanded) {
+					ctrlRef.toggleNodeExpanded(focusedPath);
+					recomputeAndDraw();
+					return;
+				}
+				this.focusParent();
+			},
+
+			// navigationPreset 'wai-aria' *: expand every sibling (skipped under the accordion).
+			expandSiblings() {
+				if (!ctrlRef || !focusedPath || ctrlRef.shouldExpandAsAccordion) return;
+				const node = ctrlRef.getNodeByPath(focusedPath);
+				if (!node) return;
+				const paths = ctrlRef
+					.getChildren(node.parentPath ?? '')
+					.filter((n) => n.hasChildren && !n.isExpanded)
+					.map((n) => n.path);
+				if (paths.length === 0) return;
+				void ctrlRef.expandNodes(paths).then(() => recomputeAndDraw());
+			},
+
 			toggleFocusedNodeExpanded() {
 				if (!ctrlRef || !focusedPath) return;
 				const node = ctrlRef.getNodeByPath(focusedPath);
